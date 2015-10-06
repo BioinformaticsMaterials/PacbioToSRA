@@ -5,7 +5,8 @@ This repo contains scripts, instructions, and examples on preparing PacBio seque
 1. Run the script
 2. Register project and samples
 3. Manually create excel spreadsheet
-4. Email NCBI
+4. Upload using aspera
+5. Email NCBI
 
 
 ##Step 1. Run the script
