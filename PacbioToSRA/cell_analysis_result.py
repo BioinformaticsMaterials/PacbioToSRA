@@ -1,3 +1,4 @@
+import concurrent.futures
 import hash_utils
 
 from glob import glob
@@ -16,7 +17,6 @@ class CellAnalysisResult(object):
     SEQUEL = 'PacBio Sequel'
     BAM_FILE_TYPE = 'bam'
     HDF5_FILE_TYPE = 'PacBio_HDF5'
-
 
     def __init__(self, absolute_path):
         # check if directory exists
@@ -177,12 +177,15 @@ class CellAnalysisResult(object):
 
         files = self.get_files()
 
-        # get all the info for each file
-        # TODO: files are huge so it's slow. Do this asynchronously
-        for f in files:
+        # files are huge so calculate md5sum for several files in parallel
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = dict((executor.submit(hash_utils.md5, f), f) for f in files)
+
+        for future in concurrent.futures.as_completed(futures):
+            f = futures[future]
             file_infos[f] = {
                 'filename': basename(f),
-                'md5sum': hash_utils.md5(f),
+                'md5sum': future.result(),
             }
 
         return file_infos
@@ -192,13 +195,18 @@ if __name__ == '__main__':
     # TODO: Create a test infrastructure
     from pprint import pprint
     # print AnalysisResults('directory_does_NOT_exist')
-    d = '/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/src/sample/2015-04-16_42141_1139__Hummingbird_17kb_plate_7/H01_1'
+    d = '/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/temp/2015-04-16_42141_1139__Hummingbird_17kb_plate_7/H01_1'
     o = CellAnalysisResult(d)
     print(o.get_bas_h5_files())
     print(o.get_bax_h5_files())
     print(o.get_metadata_xml_file())
     print(o.get_sample_name())
-    print(o.get_cell_name())
     print(o.get_run_name())
+
+    from datetime import datetime
+    print 'md5sum'
+    s = datetime.now()
     pprint(o.get_info_for_files())
+    e = datetime.now()
+    print "{} - {} => {}".format(str(e), str(s), str(e-s))
 

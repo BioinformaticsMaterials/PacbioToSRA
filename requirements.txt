@@ -1,3 +1,4 @@
 docopt==0.6.2
 openpyxl==2.2.6
+futures==3.0.3
 
