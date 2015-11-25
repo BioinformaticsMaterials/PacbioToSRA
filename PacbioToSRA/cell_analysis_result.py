@@ -1,13 +1,22 @@
 import hash_utils
 
 from glob import glob
-from os.path import join, isdir, dirname, basename
+from os.path import join, isdir, basename
 from xml.dom import minidom
+
 
 # TODO: logger
 
 
 class CellAnalysisResult(object):
+
+    # constants
+    PACB_SMART_ANALYSIS = 'PACBIO_SMRT'
+    RS2 = 'PacBio RS II'
+    SEQUEL = 'PacBio Sequel'
+    BAM_FILE_TYPE = 'bam'
+    HDF5_FILE_TYPE = 'PacBio_HDF5'
+
 
     def __init__(self, absolute_path):
         # check if directory exists
@@ -28,8 +37,7 @@ class CellAnalysisResult(object):
         :return:    Platform
         :rtype      string
         """
-        # TODO: Needs these constants
-        return 'PACBIO_SMRT'
+        return self.PACB_SMART_ANALYSIS
 
     def get_instrument_model(self):
         """Determines the instrument the analysis was ran on.
@@ -37,11 +45,10 @@ class CellAnalysisResult(object):
         :return:    Instrument
         :rtype      string
         """
-        # TODO: Needs these constants
         if self.get_bam_files():
-            return 'PacBio Sequel'
+            return self.SEQUEL
         else:
-            return 'PacBio RS II'
+            return self.RS2
 
     def get_file_type(self):
         """Determines the file type for the analysis.
@@ -49,11 +56,10 @@ class CellAnalysisResult(object):
         :return:    File type
         :rtype      string
         """
-        # TODO: Needs these constants
         if self.get_bam_files():
-            return 'bam'
+            return self.BAM_FILE_TYPE
         else:
-            return 'PacBio_HDF5'
+            return self.HDF5_FILE_TYPE
 
     def get_bas_h5_files(self):
         """Gets absolute path for files ending with *.bas.h5
