@@ -227,7 +227,7 @@ def submit_files_to_ncbi(files, username, ssh_key):
     file_len = len(files)
 
     for i in range(file_len):
-        logger.info("     ({}/{}) Sending file: {}".format(i+1, file_len, files[i]))
+        logger.info("    ({}/{}) Sending file: {}".format(i+1, file_len, files[i]))
         sra.submit_file(files[i])
 
 
