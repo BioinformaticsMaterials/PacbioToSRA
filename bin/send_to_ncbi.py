@@ -3,11 +3,11 @@
 
 Usage:
     send_to_ncbi.py --help
-    send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_accession=BIOSAMPLE_ACCESSION --input_fofn=INPUT_FOFN_FILE [--excel_output_file=EXCEL_OUTPUT_FILE]
+    send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_accession=BIOSAMPLE_ACCESSION --input_fofn=INPUT_FOFN_FILE --ncbi_username=NCBI_USERNAME --ncbi_ssh_key_file=SSH_KEY_FILE [--excel_output_file=EXCEL_OUTPUT_FILE]
 
 Example:
-    send_to_ncbi.py --bioproject_accession=PR123RF --biosample_accession=123A --input_fofn=input.fofn
-    send_to_ncbi.py --bioproject_accession=PR123RF --biosample_accession=123A --input_fofn=input.fofn --excel_output_file=my_SRA_submission.xls
+    send_to_ncbi.py --bioproject_accession=PacBioProject1 --biosample_accession=PacBioSample1 --input_fofn=input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=../../.ssh/id_rsa
+    send_to_ncbi.py --bioproject_accession=PacBioProject1 --biosample_accession=PacBioSample1 --input_fofn=input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=../../.ssh/id_rsa --excel_output_file=my_SRA_submission.xls
 
 Options:
     -h --help                                       Show this screen.
@@ -15,6 +15,8 @@ Options:
     --bioproject_accession=BIOPROJECT_ACCESSION     NCBI bioproject ID created on the NCBI website.
     --biosample_accession=BIOSAMPLE_ACCESSION       NCBI biosample ID created on the NCBI website.
     --input_fofn=INPUT_FOFN_FILE                    Location of the input.fofn file.
+    --ncbi_username=NCBI_USERNAME                   Username to upload data set to NCBI.
+    --ncbi_ssh_key_file=SSH_KEY_FILE                File for ssh key.
     --excel_output_file=EXCEL_OUTPUT_FILE           Name of the output file. Format of output is .xslx.
                                                     Default will SRA_submission_<date>.xlsx
 """
@@ -31,6 +33,7 @@ from datetime import datetime
 from docopt import docopt
 from PacbioToSRA.cell_analysis_result import CellAnalysisResult
 from PacbioToSRA.ncbi.excel_sheet_from_template import ExcelSheetFromTemplate
+from PacbioToSRA.ncbi.sra_submission import SraSubmission
 
 
 # TODO: This should eventually go into a config file
@@ -52,6 +55,9 @@ def __parse_args(args):
     input_fofn_file = args['--input_fofn']
     bioproject_accession = args['--bioproject_accession']
     biosample_accession = args['--biosample_accession']
+    username = args['--ncbi_username']
+    ssh_key = args['--ncbi_ssh_key_file']
+
     excel_output_filename = args['--excel_output_file'] \
         if args['--excel_output_file'] is not None \
         else generate_excel_file_name()
@@ -66,7 +72,12 @@ def __parse_args(args):
         print ("[ERROR] File already exist: {}".format(excel_output_filename))
         sys.exit(errno.ENOENT)      # file does not exist status code
 
-    return bioproject_accession, biosample_accession, input_fofn_file, excel_output_filename
+    # check if ssh key exists
+    if not os.path.exists(ssh_key):
+        print ("[ERROR] File does not exist: {}".format(ssh_key))
+        sys.exit(errno.ENOENT)      # file does not exist status code
+
+    return bioproject_accession, biosample_accession, input_fofn_file, username, ssh_key, excel_output_filename
 
 
 def extract_cell_analysis_result_dirs_from_input_fofn_file(input_fofn_file):
@@ -197,10 +208,31 @@ def generate_excel_file_name():
     return "SRA_submission_{}.xlsx".format(datetime.now().strftime("%Y%m%d%H%M"))
 
 
+def submit_files_to_ncbi(files, username, ssh_key):
+    """Sends a list of files to NCBI
+
+    :param      files:      Files to send.
+    :type       files:      list
+    :param      username:   Username for NCBI
+    :type       username    string
+    :param      ssh_key:    ssh key file
+    :rtype      ssh_key:    string
+    """
+    logger.info("Submitting files to NCBI...")
+
+    sra = SraSubmission(username, ssh_key)
+    file_len = len(files)
+
+    for i in range(file_len):
+        logger.info("     ({}/{}) Sending file: {}".format(i+1, file_len, files[i]))
+        sra.submit_file(files[i])
+
+
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Send to NCBI .5')
 
-    bioproject_accession, biosample_accession, input_fofn_file, excel_output_filename = __parse_args(arguments)
+    bioproject_accession, biosample_accession, input_fofn_file, username, ssh_key, excel_output_filename = \
+        __parse_args(arguments)
 
     input_fofn_dirs = extract_cell_analysis_result_dirs_from_input_fofn_file(input_fofn_file)
 
@@ -211,6 +243,12 @@ if __name__ == '__main__':
 
     creat_excel_workbook(excel_output_filename, files_ws_rows, sr_data_ws_rows)
 
-    # TODO: Upload
+    # Get all files to upload
+    files_only = []
+    for result in cell_analysis_results:
+        files_only.extend(result.get_files())
+
+    submit_files_to_ncbi(files_only, username, ssh_key)
+
     # TODO: confirm the upload
 
