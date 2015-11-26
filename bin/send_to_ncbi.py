@@ -96,6 +96,9 @@ def extract_cell_analysis_result_dirs_from_input_fofn_file(input_fofn_file):
             # want everything before "Analysis_Results"
             d = dirname(dirname(f.strip()))
 
+            if d == '':
+                continue
+
             if not os.path.exists(d):
                 print ("[ERROR] Reading input.fofn file... Directory does not exist: {}".format(d))
                 sys.exit(errno.ENOENT)      # file does not exist status code
