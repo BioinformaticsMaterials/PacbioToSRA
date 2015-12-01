@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Metadata xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://pacificbiosciences.com/PAP/Metadata.xsd">
+  <Run>
+    <RunId>H5_Run_RunID</RunId>
+    <Name>H5_Run_Name</Name>
+  </Run>
+  <Sample>
+    <Name>H5_Sample_Name</Name>
+    <PlateId>H5_Sample_PlateId</PlateId>
+  </Sample>
+</Metadata>

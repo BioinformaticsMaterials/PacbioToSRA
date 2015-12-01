@@ -190,23 +190,3 @@ class CellAnalysisResult(object):
 
         return file_infos
 
-
-if __name__ == '__main__':
-    # TODO: Create a test infrastructure
-    from pprint import pprint
-    # print AnalysisResults('directory_does_NOT_exist')
-    d = '/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/temp/2015-04-16_42141_1139__Hummingbird_17kb_plate_7/H01_1'
-    o = CellAnalysisResult(d)
-    print(o.get_bas_h5_files())
-    print(o.get_bax_h5_files())
-    print(o.get_metadata_xml_file())
-    print(o.get_sample_name())
-    print(o.get_run_name())
-
-    from datetime import datetime
-    print 'md5sum'
-    s = datetime.now()
-    pprint(o.get_info_for_files())
-    e = datetime.now()
-    print "{} - {} => {}".format(str(e), str(s), str(e-s))
-
