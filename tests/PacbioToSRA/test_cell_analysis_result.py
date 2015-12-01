@@ -1,7 +1,7 @@
 import unittest
 
-from tests import *
 from PacbioToSRA.cell_analysis_result import *
+from tests import *
 
 
 class TestCellAnalysisResult(unittest.TestCase):
