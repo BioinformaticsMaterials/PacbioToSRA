@@ -66,12 +66,3 @@ class SraSubmission(object):
             logger.error("Submitting file failed: {}".format(f))
             raise
 
-
-if __name__ == '__main__':
-    files = ['a', 'b']
-    username = 't'
-    ssh = '../../../ssh/aspera.pacbio.openssh.open_permissions'
-
-    o = SraSubmission(username, ssh)
-    o.submit_files(files)
-
