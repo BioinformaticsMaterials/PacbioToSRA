@@ -29,59 +29,75 @@ class ExcelSheetFromTemplate(object):
         self._sr_data_ws = self._output_wb.get_sheet_by_name(self.SR_DATA_WORKSHEET_NAME)
 
     def _copy_template(self, output_file):
-        """
+        """Copies the template to a new file.
 
-        :param output_file:
-        :return:
+        :param  output_file:    Output file
+        :type   output_file:    string
         """
         shutil.copy(self.NCBI_SRA_SUBMISSION_FILE, output_file)
 
     def _save_output_workbook(self):
+        """ Saves output file.
+        """
         self._output_wb.save(self._output_file)
 
     def write_to_files_worksheet(self, rows):
-        '''
-        ws_for_files = wb.active
-        ws_for_files.title = 'Sheet1'
-        ws_for_files.append(['Library_ID', 'Run_ID', 'Filename', 'md5sum'])
-        '''
+        """Writes the rows to the excel sheet that lists all the files."
 
+        Columns headers:
+            Library_ID
+            Run_ID
+            Filename
+            md5sum
+
+        :param  rows:   Rows to write
+        :type   rows:   list
+        """
         self._do_write_to_worksheet(self._files_ws, rows)
 
     def write_to_sr_data_worksheet(self, rows):
-        '''
-        # Create excel sheet for sample runs
-        ws_for_sr_data = wb.create_sheet(index=0, title='SRA_data')
-        ws_for_sr_data.append([
-            'bioproject_accession',
-            'biosample_accession',
-            'sample_name',
-            'library_ID',
-            'title/short description',
-            'library_strategy (click for details)',
-            'library_source (click for details)',
-            'library_selection (click for details)',
-            'library_layout',
-            'platform (click for details)',
-            'instrument_model',
-            'design_description',
-            'reference_genome_assembly (or accession)',
-            'alignment_software',
-            'forward_read_length',
-            'reverse_read_length',
-            'filetype',
-            'filename',
-            'MD5_checksum',
-            'filetype',
-            'filename',
-            'MD5_checksum',
-        ])
-        '''
+        """Writes the rows to the excel sheet that has the data on the sample run."
+
+        Columns headers:
+            bioproject_accession
+            biosample_accession
+            sample_name
+            library_ID
+            title/short description
+            library_strategy (click for details)
+            library_source (click for details)
+            library_selection (click for details)
+            library_layout
+            platform (click for details)
+            instrument_model
+            design_description
+            reference_genome_assembly (or accession)
+            alignment_software
+            forward_read_length
+            reverse_read_length
+            filetype
+            filename
+            MD5_checksum
+            filetype
+            filename
+            MD5_checksum
+
+        :param  rows:   Rows to write
+        :type   rows:   list
+        """
+
         self._do_write_to_worksheet(self._sr_data_ws, rows)
 
     def _do_write_to_worksheet(self, ws, rows):
-        # assumes that each worksheet has a header
+        """Writes rows to the worksheet.
 
+        :param  ws:     Worksheet
+        :type   ws:     worksheet
+        :param  rows:   Rows to write
+        :type   rows    list
+        """
+
+        # assumes that each worksheet has a header
         row_index = 2           # excel worksheets start at 1. skip header
 
         for row in rows:
