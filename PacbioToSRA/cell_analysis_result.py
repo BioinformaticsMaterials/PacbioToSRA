@@ -160,6 +160,11 @@ class CellAnalysisResult(object):
             raise Exception("No path to Run/Name")
 
     def get_info_for_files(self):
+        """Gets additional information on all files.
+
+        :return:    A list of files with additional info
+        :rtype      list
+        """
         if self.file_info:
             return self.file_info
 
