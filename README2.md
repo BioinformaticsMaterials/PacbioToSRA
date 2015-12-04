@@ -17,10 +17,14 @@ This repo contains scripts, instructions, and examples on preparing PacBio seque
 ##Step 2. Prepare script's environment
 ####Install Aspera software:
 
-*  download and install the linux version of aspera-connect that contains the ascp command (http://downloads.asperasoft.com/en/downloads/50)
-*  Add Aspera's ascp command to your $PATH. Example:
+*  Download and install the linux version of aspera-connect that contains the ascp command (http://downloads.asperasoft.com/en/downloads/50)
+*  Add Aspera's ascp command to your $PATH. Example:  
 ```
     $ export PATH='/path/to/ascp/command':$PATH
+```
+*  Verify that the Aspera's ascp is in your $PATH.  
+```
+    $ which ascp
 ```
 
 ####Setup virtual environment:
@@ -39,7 +43,8 @@ $ bin/send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_ac
 ```
 *  NCBI_USERNAME is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
 *  SSH _KEY _FILE is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
-*  For additional help on the script, type: ```$ bin/send_to_ncbi.py --help```
+*  For additional help on the script, type:  
+```$ bin/send_to_ncbi.py --help```
 
 
 ####Example:
