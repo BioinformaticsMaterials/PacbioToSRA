@@ -9,6 +9,9 @@ class TestCellAnalysisResult(unittest.TestCase):
     $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis_result
     $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis_result.TestCellAnalysisResult
     $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis_result.TestCellAnalysisResult.test_directory_does_not_exist
+
+    To run all test:
+    $ python -m unittest discover -v
     """
 
     def test_directory_does_not_exist(self):

@@ -9,6 +9,9 @@ class TestSraSubmission(unittest.TestCase):
     $ python -m unittest -v tests.PacbioToSRA.ncbi.test_sra_submission
     $ python -m unittest -v tests.PacbioToSRA.ncbi.test_sra_submission.TestSraSubmission
     $ python -m unittest -v tests.PacbioToSRA.ncbi.test_sra_submission.TestSraSubmission.test_ssh_key_does_not_exist
+
+    To run all test:
+    $ python -m unittest discover -v
     """
 
     def test_ssh_key_does_not_exist(self):
