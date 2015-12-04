@@ -2,49 +2,56 @@
 This repo contains scripts, instructions, and examples on preparing PacBio sequence data for data submission to the SRA. 
 
 ## Instructions
-1. Run the script
-2. Register project and samples
-3. Manually create excel spreadsheet
-4. Upload using aspera
-5. Email NCBI
+1. Register project and samples
+2. Setup script's environment
+3. Run the script
+4. Email spreadsheet to NCBI
 
 
-##Step 1. Run the script
-```
-$ python PacbioToSRA.py input.fofn
-```
-
-###Inputs: 
-  1. input.fofn
-
-###Outputs:
-  1. sra_data.txt - sample information for data submission (from metadata.xml)
-  2. file_info.csv - md5sums of of files for data submission
-  3. aspera.fofn - full path to all files that need to be uploaded to NCBI SRA
-
-
-##Step 2. Register project and samples
+##Step 1. Register project and samples
 
     Go to https://submit.ncbi.nlm.nih.gov/ and register your Bioproject
     Go to https://submit.ncbi.nlm.nih.gov/ and register your Biosample
 
-##Step 3. Manually create excel spreadsheet
-Open SRA_submission.xlsx and paste the contents of sra_data.txt to the "library_ID" column of the spreadsheet.  Fill in the BioProject and BioSamples that you created in step 2 for each entry. Open file_info.csv, and paste the contents as a new sheet in SRA_submission.xlsx
 
-##Step 4. Upload using aspera
-``` 
-$ screen
-$ for i in $(cat aspera.fofn); 
-  do aspera/connect/bin/ascp -i xxxx_sshkeyformyinstitution.openssh -QT -l200m -k1 $i asp-xxxx_myinstitution@upload.ncbi.nlm.nih.gov:incoming;
-  done;
+##Step 2. Prepare script's environment
+####Install Aspera software:
+
+*  Download and install the linux version of aspera-connect that contains the ascp command (http://downloads.asperasoft.com/en/downloads/50)
+*  Add Aspera's ascp command to your $PATH. Example:  
+```
+    $ export PATH='/path/to/ascp/command':$PATH
+```
+*  Verify that the Aspera's ascp is in your $PATH.  
+```
+    $ which ascp
 ```
 
-* do this in a screen session because it may take a long time
-* download the linux version of aspera-connect that contains the ascp command (http://downloads.asperasoft.com/en/downloads/50
-* xxxx_sshkeyformyinstitution is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
-* asp-xxxx_myinstitution is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
+####Setup virtual environment:
+
+```
+$ virtualenv virtualenv_PacbioToSRA
+$ source virtualenv_PacbioToSRA/bin/activate
+$ pip install -r requirements.txt
+```
 
 
-##Step 5. Email NCBI
+##Step 3. Run the script
+####Usage:
+```
+$ bin/send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_accession=BIOSAMPLE_ACCESSION --input_fofn=INPUT_FOFN_FILE --ncbi_username=NCBI_USERNAME --ncbi_ssh_key_file=SSH_KEY_FILE [--excel_output_file=EXCEL_OUTPUT_FILE]
+```
+*  NCBI_USERNAME is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
+*  SSH _KEY _FILE is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
+*  For additional help on the script, type:  
+```$ bin/send_to_ncbi.py --help```
+
+
+####Example:
+```
+$ bin/send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xls
+```
+
+##Step 4. Email spreadsheet to NCBI
 Email (info@ncbi.nlm.nih.gov) and attach the spreadsheet to the email. 
 
