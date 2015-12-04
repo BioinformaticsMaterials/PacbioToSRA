@@ -6,17 +6,17 @@ Usage:
     send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_accession=BIOSAMPLE_ACCESSION --input_fofn=INPUT_FOFN_FILE --ncbi_username=NCBI_USERNAME --ncbi_ssh_key_file=SSH_KEY_FILE [--excel_output_file=EXCEL_OUTPUT_FILE]
 
 Example:
-    send_to_ncbi.py --bioproject_accession=PacBioProject1 --biosample_accession=PacBioSample1 --input_fofn=input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=../../.ssh/id_rsa
-    send_to_ncbi.py --bioproject_accession=PacBioProject1 --biosample_accession=PacBioSample1 --input_fofn=input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=../../.ssh/id_rsa --excel_output_file=my_SRA_submission.xls
+    send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file
+    send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xls
 
 Options:
     -h --help                                       Show this screen.
     --version                                       Show version.
     --bioproject_accession=BIOPROJECT_ACCESSION     NCBI bioproject ID created on the NCBI website.
     --biosample_accession=BIOSAMPLE_ACCESSION       NCBI biosample ID created on the NCBI website.
-    --input_fofn=INPUT_FOFN_FILE                    Location of the input.fofn file.
-    --ncbi_username=NCBI_USERNAME                   Username to upload data set to NCBI.
-    --ncbi_ssh_key_file=SSH_KEY_FILE                File for ssh key.
+    --input_fofn=INPUT_FOFN_FILE                    The input.fofn file.
+    --ncbi_username=NCBI_USERNAME                   Username to use to upload data sets to NCBI.
+    --ncbi_ssh_key_file=SSH_KEY_FILE                SSH key  to use to upload data sets to NCBI.
     --excel_output_file=EXCEL_OUTPUT_FILE           Name of the output file. Format of output is .xslx.
                                                     Default will SRA_submission_<date>.xlsx
 """
@@ -254,4 +254,6 @@ if __name__ == '__main__':
     submit_files_to_ncbi(files_only, username, ssh_key)
 
     # TODO: confirm the upload
+
+    logger.info("Complete!")
 
