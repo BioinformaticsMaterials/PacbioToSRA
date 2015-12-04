@@ -5,7 +5,7 @@ This repo contains scripts, instructions, and examples on preparing PacBio seque
 1. Register project and samples
 2. Setup script's environment
 3. Run the script
-4. Email spreadsheet to NCBI
+4. Update spreadsheet and email it to NCBI
 
 
 ##Step 1. Register project and samples
@@ -52,6 +52,7 @@ $ bin/send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_ac
 $ bin/send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xls
 ```
 
-##Step 4. Email spreadsheet to NCBI
-Email (info@ncbi.nlm.nih.gov) and attach the spreadsheet to the email. 
+##Step 4. Update spreadsheet and email it to NCBI
+*  Update the spreadsheet with any additional information.
+*  Email (info@ncbi.nlm.nih.gov) and attach the spreadsheet to the email. 
 
