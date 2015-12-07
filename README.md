@@ -49,7 +49,7 @@ $ bin/send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_ac
 
 ####Example:
 ```
-$ bin/send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xls
+$ bin/send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xlsx
 ```
 
 ##Step 4. Update spreadsheet and email it to NCBI

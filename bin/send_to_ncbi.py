@@ -7,7 +7,7 @@ Usage:
 
 Example:
     send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file
-    send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xls
+    send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xlsx
 
 Options:
     -h --help                                       Show this screen.
