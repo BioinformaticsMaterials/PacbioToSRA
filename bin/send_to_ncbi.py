@@ -65,17 +65,17 @@ def __parse_args(args):
     # check if input file exists
     if not os.path.exists(input_fofn_file):
         print ("[ERROR] File does not exist: {}".format(input_fofn_file))
-        sys.exit(errno.ENOENT)      # file does not exist status code
+        sys.exit(errno.ENOENT)      # file/dir does not exist status code
 
     # check if output file already exists
     if os.path.exists(excel_output_filename):
         print ("[ERROR] File already exist: {}".format(excel_output_filename))
-        sys.exit(errno.ENOENT)      # file does not exist status code
+        sys.exit(errno.ENOENT)      # file/dir does not exist status code
 
     # check if ssh key exists
     if not os.path.exists(ssh_key):
         print ("[ERROR] File does not exist: {}".format(ssh_key))
-        sys.exit(errno.ENOENT)      # file does not exist status code
+        sys.exit(errno.ENOENT)      # file/dir does not exist status code
 
     return bioproject_accession, biosample_accession, input_fofn_file, username, ssh_key, excel_output_filename
 
@@ -101,9 +101,13 @@ def extract_cell_analysis_result_dirs_from_input_fofn_file(input_fofn_file):
 
             if not os.path.exists(d):
                 print ("[ERROR] Reading input.fofn file... Directory does not exist: {}".format(d))
-                sys.exit(errno.ENOENT)      # file does not exist status code
+                sys.exit(errno.ENOENT)      # file/dir does not exist status code
 
             dirs.add(d)
+
+    if not dirs:
+        print ('[ERROR] No directories found in input.fofn file.')
+        sys.exit(errno.ENODATA)
 
     return dirs
 
