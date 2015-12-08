@@ -78,6 +78,18 @@ class TestCellAnalysisResult(unittest.TestCase):
             CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_run_name()
         )
 
+    def test_get_templateprep_name(self):
+        self.assertEqual(
+            'H5_TemplatePrep_Name',
+            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_templateprep_name()
+        )
+
+    def test_get_bindingkit_name(self):
+        self.assertEqual(
+            'BAM_BindingKit_Name',
+            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_bindingkit_name()
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

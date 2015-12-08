@@ -8,4 +8,10 @@
     <Name>H5_Sample_Name</Name>
     <PlateId>H5_Sample_PlateId</PlateId>
   </Sample>
+  <TemplatePrep>
+    <Name>H5_TemplatePrep_Name</Name>
+  </TemplatePrep>
+  <BindingKit>
+    <Name>H5_BindingKit_Name</Name>
+  </BindingKit>
 </Metadata>

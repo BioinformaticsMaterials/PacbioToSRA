@@ -151,13 +151,42 @@ class CellAnalysisResult(object):
         self.__load_metadata_xml_contents()
 
         try:
-            #TODO: check if this path is correct. original script was using the directory name
             return self.metadata_xml_file_contents \
                 .getElementsByTagName('Run')[0] \
                 .getElementsByTagName('Name')[0] \
                 .firstChild.data
         except:
             raise Exception("No path to Run/Name")
+
+    def get_templateprep_name(self):
+        """Gets the template prep name.
+
+        :return string
+        """
+        self.__load_metadata_xml_contents()
+
+        try:
+            return self.metadata_xml_file_contents \
+                .getElementsByTagName('TemplatePrep')[0] \
+                .getElementsByTagName('Name')[0] \
+                .firstChild.data
+        except:
+            raise Exception("No path to TemplatePrep/Name")
+
+    def get_bindingkit_name(self):
+        """Gets the binding kit name.
+
+        :return string
+        """
+        self.__load_metadata_xml_contents()
+
+        try:
+            return self.metadata_xml_file_contents \
+                .getElementsByTagName('BindingKit')[0] \
+                .getElementsByTagName('Name')[0] \
+                .firstChild.data
+        except:
+            raise Exception("No path to BindingKit/Name")
 
     def get_info_for_files(self):
         """Gets additional information on all files.

@@ -8,4 +8,10 @@
     <Name>BAM_Sample_Name</Name>
     <PlateId>BAM_Sample_PlateId</PlateId>
   </Sample>
+  <TemplatePrep>
+    <Name>BAM_TemplatePrep_Name</Name>
+  </TemplatePrep>
+  <BindingKit>
+    <Name>BAM_BindingKit_Name</Name>
+  </BindingKit>
 </Metadata>
