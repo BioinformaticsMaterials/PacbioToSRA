@@ -107,6 +107,42 @@ class CellAnalysisResult(object):
         """
         return self.get_bas_h5_files() + self.get_bax_h5_files() + [self.get_metadata_xml_file()] + self.get_bam_files()
 
+    def get_info_for_files(self):
+        """Gets additional information on all files.
+
+        :return:    A list of files with additional info
+        :rtype      list
+        """
+        if self.file_info:
+            return self.file_info
+
+        file_infos = {
+            # <file>: {
+            #   filename: ...,
+            #   md5sum: ...,
+            # },
+            # '/mnt/data/m15253.bax.h5': {
+            #   filename: 'm15253.bax.h5',
+            #   md5sum: '26d155cbf85691c937feea9fe4f762e2',
+            # },
+            # ...
+        }
+
+        files = self.get_files()
+
+        # files are huge so calculate md5sum for several files in parallel
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = dict((executor.submit(hash_utils.md5, f), f) for f in files)
+
+        for future in concurrent.futures.as_completed(futures):
+            f = futures[future]
+            file_infos[f] = {
+                'filename': basename(f),
+                'md5sum': future.result(),
+            }
+
+        return file_infos
+
     def __load_metadata_xml_contents(self):
         """Loads the contents of the metadata_xml file into the instance.
         """
@@ -187,40 +223,4 @@ class CellAnalysisResult(object):
                 .firstChild.data
         except:
             raise Exception("No path to BindingKit/Name")
-
-    def get_info_for_files(self):
-        """Gets additional information on all files.
-
-        :return:    A list of files with additional info
-        :rtype      list
-        """
-        if self.file_info:
-            return self.file_info
-
-        file_infos = {
-            # <file>: {
-            #   filename: ...,
-            #   md5sum: ...,
-            # },
-            # '/mnt/data/m15253.bax.h5': {
-            #   filename: 'm15253.bax.h5',
-            #   md5sum: '26d155cbf85691c937feea9fe4f762e2',
-            # },
-            # ...
-        }
-
-        files = self.get_files()
-
-        # files are huge so calculate md5sum for several files in parallel
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            futures = dict((executor.submit(hash_utils.md5, f), f) for f in files)
-
-        for future in concurrent.futures.as_completed(futures):
-            f = futures[future]
-            file_infos[f] = {
-                'filename': basename(f),
-                'md5sum': future.result(),
-            }
-
-        return file_infos
 
