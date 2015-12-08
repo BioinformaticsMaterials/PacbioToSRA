@@ -49,19 +49,17 @@ class SraSubmission(object):
         :type       f:  string
         """
         try:
-            pass    # TODO: Remove this and uncomment lines below
-
             # Example bash command: /path/to/aspera/ascp -i /path/to/ssh_key -QT -l200m -k1 /path/to/file ncbi_username@upload.ncbi.nlm.nih.gov:/path/to/destination/folder
             # TODO: Make this more configurable
-            # subprocess.call([
-            #     self.ascp_cmd,
-            #     '-i', self.ssh_key_file,
-            #     '-QT',
-            #     '-l200m',           # TODO: why limit  max transfer rate
-            #     '-k1',
-            #     f,
-            #     "{}@{}:{}".format(self.username, self.NCBI_SUBMISSION_SERVER, self.dest_path)
-            # ])
+            subprocess.call([
+                self.ascp_cmd,
+                '-i', self.ssh_key_file,
+                '-QT',
+                '-l200m',           # TODO: why limit  max transfer rate
+                '-k1',
+                f,
+                "{}@{}:{}".format(self.username, self.NCBI_SUBMISSION_SERVER, self.dest_path)
+            ])
         except Exception as e:
             logger.error("Submitting file failed: {}".format(f))
             raise
