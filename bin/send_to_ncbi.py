@@ -244,6 +244,11 @@ if __name__ == '__main__':
     bioproject_accession, biosample_accession, input_fofn_file, username, ssh_key, excel_output_filename = \
         __parse_args(arguments)
 
+    # return if ascp command does not exist
+    if not SraSubmission(username, ssh_key).ascp_cmd_exist():
+        logging.error("Could not find Aspera's ascp command!")
+        sys.exit(errno.ENOENT)      # file/dir does not exist status code
+
     input_fofn_dirs = extract_cell_analysis_result_dirs_from_input_fofn_file(input_fofn_file)
 
     cell_analysis_results = get_cell_analysis_result_data(input_fofn_dirs)

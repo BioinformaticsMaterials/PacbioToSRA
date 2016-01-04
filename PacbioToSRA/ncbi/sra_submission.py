@@ -29,9 +29,13 @@ class SraSubmission(object):
         """
         try:
             return subprocess.check_output(['which', 'ascp']).strip()
-        except Exception as e:
-            logger.error("Could not find Aspera's ascp command!")
-            raise
+        except:
+            return None
+
+    def ascp_cmd_exist(self):
+        """Checks if the ascp command exists.
+        """
+        return True if self.ascp_cmd else False
 
     def submit_files(self, files):
         """Submits a list of files to NCBI.
@@ -48,6 +52,9 @@ class SraSubmission(object):
         :param      f:  File to send
         :type       f:  string
         """
+        if not self.ascp_cmd_exist():
+            raise Exception("Could not find Aspera's ascp command!")
+
         try:
             # Example bash command: /path/to/aspera/ascp -i /path/to/ssh_key -QT -l200m -k1 /path/to/file ncbi_username@upload.ncbi.nlm.nih.gov:/path/to/destination/folder
             # TODO: Make this more configurable
