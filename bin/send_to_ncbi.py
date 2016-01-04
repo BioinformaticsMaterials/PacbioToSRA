@@ -140,8 +140,8 @@ def generate_rows_for_files_worksheet(cell_analysis_results):
     logger.info('Creating Excel data for all file information...')
     rows = []
     for r in cell_analysis_results:
-        sample_name = r.get_sample_name()
-        sample_plateid = r.get_sample_plateid()
+        sample_name = r.get_value_from_xml_path('Sample/Name')
+        sample_plateid = r.get_value_from_xml_path('Sample/PlateId')
         for f, info in r.get_info_for_files().iteritems():
             rows.append([sample_name, sample_plateid, info['filename'], info['md5sum']])
 
@@ -160,46 +160,35 @@ def generate_rows_for_sr_data_worksheet(cell_analysis_results):
     rows = []
     unique_sample_names = set()
     for r in cell_analysis_results:
-        if r.get_sample_name() not in unique_sample_names:
+        if r.get_value_from_xml_path('Sample/Name') not in unique_sample_names:
             rows.append([
-                bioproject_accession,           # bioproject_accession
-                biosample_accession,            # biosample_accession
-                r.get_sample_name(),            # sample_name
-                r.get_sample_name(),            # library_ID        # TODO: is this right?
-                None,                           # title/short description
-                None,                           # library_strategy (click for details)
-                None,                           # library_source (click for details)
-                None,                           # library_selection (click for details)
-                None,                           # library_layout
-                r.get_platform(),               # platform (click for details)
-                r.get_instrument_model(),       # instrument_model
-                create_design_description(r),   # design_description
-                None,                           # reference_genome_assembly (or accession)
-                None,                           # alignment_software
-                None,                           # forward_read_length
-                None,                           # reverse_read_length
-                r.get_file_type(),              # filetype
-                None,                           # filename
-                None,                           # MD5_checksum
-                None,                           # filetype
-                None,                           # filename
-                None,                           # MD5_checksum
+                bioproject_accession,                                               # bioproject_accession
+                biosample_accession,                                                # biosample_accession
+                r.get_value_from_xml_path('Sample/Name'),                           # sample_name
+                r.get_value_from_xml_path('Sample/Name'),                           # library_ID        # TODO: is this right?
+                None,                                                               # title/short description
+                None,                                                               # library_strategy (click for details)
+                None,                                                               # library_source (click for details)
+                None,                                                               # library_selection (click for details)
+                None,                                                               # library_layout
+                r.get_platform(),                                                   # platform (click for details)
+                r.get_instrument_model(),                                           # instrument_model
+                r.get_value_from_xml_path('Primary/ConfigFileName').rstrip('.xml'), # design_description
+                None,                                                               # reference_genome_assembly (or accession)
+                None,                                                               # alignment_software
+                None,                                                               # forward_read_length
+                None,                                                               # reverse_read_length
+                r.get_file_type(),                                                  # filetype
+                None,                                                               # filename
+                None,                                                               # MD5_checksum
+                None,                                                               # filetype
+                None,                                                               # filename
+                None,                                                               # MD5_checksum
             ])
 
-        unique_sample_names.add(r.get_sample_name())
+        unique_sample_names.add(r.get_value_from_xml_path('Sample/Name'))
 
     return rows
-
-
-def create_design_description(cell_analysis_result):
-    """Creates the design_description info in excel sheet.
-
-    :param  cell_analysis_result:   The cell analysis object.
-    :rtype  cell_analysis_result:   CellAnalysisResult
-    :return:                        The design description.
-    :rtype                          string
-    """
-    return "{} - {}".format(cell_analysis_result.get_bindingkit_name(), cell_analysis_result.get_templateprep_name())
 
 
 def creat_excel_workbook(output_filename, files_ws_rows, sr_data_ws_rows):

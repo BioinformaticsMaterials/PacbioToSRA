@@ -42,53 +42,73 @@ class TestCellAnalysisResult(unittest.TestCase):
             CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_file_type()
         )
 
-    def test_get_sample_name_for_h5_files(self):
-        self.assertEqual(
-            'H5_Sample_Name',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_sample_name()
-        )
+    def test_get_value_from_xml_path_from_h5_files(self):
+        test_cases = [
+            {
+                'input': 'Sample/Name',
+                'expected_value': 'H5_Sample_Name',
+            },
+            {
+                'input': 'Sample/PlateId',
+                'expected_value': 'H5_Sample_PlateId',
+            },
+            {
+                'input': 'Run/Name',
+                'expected_value': 'H5_Run_Name',
+            },
+            {
+                'input': 'TemplatePrep/Name',
+                'expected_value': 'H5_TemplatePrep_Name',
+            },
+            {
+                'input': 'BindingKit/Name',
+                'expected_value': 'H5_BindingKit_Name',
+            },
+            {
+                'input': 'Primary/ConfigFileName',
+                'expected_value': 'H5_Primary_ConfigFileName.xml',
+            },
 
-    def test_get_sample_name_for_bam_files(self):
-        self.assertEqual(
-            'BAM_Sample_Name',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_sample_name()
-        )
+        ]
 
-    def test_get_sample_plateid_for_h5_files(self):
-        self.assertEqual(
-            'H5_Sample_PlateId',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_sample_plateid()
-        )
+        c = CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH)
 
-    def test_get_sample_plateid_for_bam_files(self):
-        self.assertEqual(
-            'BAM_Sample_PlateId',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_sample_plateid()
-        )
+        for test in test_cases:
+            self.assertEqual(test['expected_value'], c.get_value_from_xml_path(test['input']))
 
-    def test_get_run_name_for_h5_files(self):
-        self.assertEqual(
-            'H5_Run_Name',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_run_name()
-        )
+    def test_get_value_from_xml_path_from_bam_files(self):
+        test_cases = [
+            {
+                'input': 'Sample/Name',
+                'expected_value': 'BAM_Sample_Name',
+            },
+            {
+                'input': 'Sample/PlateId',
+                'expected_value': 'BAM_Sample_PlateId',
+            },
+            {
+                'input': 'Run/Name',
+                'expected_value': 'BAM_Run_Name',
+            },
+            {
+                'input': 'TemplatePrep/Name',
+                'expected_value': 'BAM_TemplatePrep_Name',
+            },
+            {
+                'input': 'BindingKit/Name',
+                'expected_value': 'BAM_BindingKit_Name',
+            },
+            {
+                'input': 'Primary/ConfigFileName',
+                'expected_value': 'BAM_Primary_ConfigFileName.xml',
+            },
 
-    def test_get_run_name_for_bam_files(self):
-        self.assertEqual(
-            'BAM_Run_Name',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_run_name()
-        )
+        ]
 
-    def test_get_templateprep_name(self):
-        self.assertEqual(
-            'H5_TemplatePrep_Name',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_templateprep_name()
-        )
+        c = CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH)
 
-    def test_get_bindingkit_name(self):
-        self.assertEqual(
-            'BAM_BindingKit_Name',
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_bindingkit_name()
-        )
+        for test in test_cases:
+            self.assertEqual(test['expected_value'], c.get_value_from_xml_path(test['input']))
 
 
 if __name__ == '__main__':

@@ -149,78 +149,25 @@ class CellAnalysisResult(object):
         if self.metadata_xml_file_contents is None:
             self.metadata_xml_file_contents = minidom.parse(self.get_metadata_xml_file())
 
-    def get_sample_name(self):
-        """Gets the sample name.
+    def get_value_from_xml_path(self, path):
+        """Extracts data from the xml file.
 
-        :return string
+        :param  path:   Path to data. Input format: /path/to/field => <path><to><field>value</field></to></path>
+        :type   path:   string
+        :return:        Value in xml field
+        :rtype          string
         """
         self.__load_metadata_xml_contents()
 
-        try:
-            return self.metadata_xml_file_contents \
-                .getElementsByTagName('Sample')[0] \
-                .getElementsByTagName('Name')[0] \
-                .firstChild.data
-        except:
-            raise Exception("No path to Sample/Name")
-
-    def get_sample_plateid(self):
-        """Gets the sample plate id.
-
-        :return string
-        """
-        self.__load_metadata_xml_contents()
+        path_in_parts = path.split('/')
 
         try:
-            return self.metadata_xml_file_contents \
-                .getElementsByTagName('Sample')[0] \
-                .getElementsByTagName('PlateId')[0] \
-                .firstChild.data
+            xml = self.metadata_xml_file_contents
+            for path_part in path_in_parts:
+                xml = xml.getElementsByTagName(path_part)[0]
+
+            return xml.firstChild.data
+
         except:
-            raise Exception("No path to Sample/PlateId")
-
-    def get_run_name(self):
-        """Gets the run name.
-
-        :return string
-        """
-        self.__load_metadata_xml_contents()
-
-        try:
-            return self.metadata_xml_file_contents \
-                .getElementsByTagName('Run')[0] \
-                .getElementsByTagName('Name')[0] \
-                .firstChild.data
-        except:
-            raise Exception("No path to Run/Name")
-
-    def get_templateprep_name(self):
-        """Gets the template prep name.
-
-        :return string
-        """
-        self.__load_metadata_xml_contents()
-
-        try:
-            return self.metadata_xml_file_contents \
-                .getElementsByTagName('TemplatePrep')[0] \
-                .getElementsByTagName('Name')[0] \
-                .firstChild.data
-        except:
-            raise Exception("No path to TemplatePrep/Name")
-
-    def get_bindingkit_name(self):
-        """Gets the binding kit name.
-
-        :return string
-        """
-        self.__load_metadata_xml_contents()
-
-        try:
-            return self.metadata_xml_file_contents \
-                .getElementsByTagName('BindingKit')[0] \
-                .getElementsByTagName('Name')[0] \
-                .firstChild.data
-        except:
-            raise Exception("No path to BindingKit/Name")
+            raise Exception("No path to {}".format(path))
 

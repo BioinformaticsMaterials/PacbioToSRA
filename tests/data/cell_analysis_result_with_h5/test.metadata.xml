@@ -14,4 +14,7 @@
   <BindingKit>
     <Name>H5_BindingKit_Name</Name>
   </BindingKit>
+  <Primary>
+    <ConfigFileName>H5_Primary_ConfigFileName.xml</ConfigFileName>
+  </Primary>
 </Metadata>

@@ -14,4 +14,7 @@
   <BindingKit>
     <Name>BAM_BindingKit_Name</Name>
   </BindingKit>
+  <Primary>
+    <ConfigFileName>BAM_Primary_ConfigFileName.xml</ConfigFileName>
+  </Primary>
 </Metadata>
