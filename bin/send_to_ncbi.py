@@ -160,33 +160,35 @@ def generate_rows_for_sr_data_worksheet(cell_analysis_results):
     rows = []
     unique_sample_names = set()
     for r in cell_analysis_results:
-        if r.get_value_from_xml_path('Sample/Name') not in unique_sample_names:
+        sample_name = r.get_value_from_xml_path('Sample/Name')
+        design_desc = r.get_value_from_xml_path('Primary/ConfigFileName').rstrip('.xml')
+        if sample_name not in unique_sample_names:
             rows.append([
-                bioproject_accession,                                               # bioproject_accession
-                biosample_accession,                                                # biosample_accession
-                r.get_value_from_xml_path('Sample/Name'),                           # sample_name
-                r.get_value_from_xml_path('Sample/Name'),                           # library_ID        # TODO: is this right?
-                None,                                                               # title/short description
-                None,                                                               # library_strategy (click for details)
-                None,                                                               # library_source (click for details)
-                None,                                                               # library_selection (click for details)
-                None,                                                               # library_layout
-                r.get_platform(),                                                   # platform (click for details)
-                r.get_instrument_model(),                                           # instrument_model
-                r.get_value_from_xml_path('Primary/ConfigFileName').rstrip('.xml'), # design_description
-                None,                                                               # reference_genome_assembly (or accession)
-                None,                                                               # alignment_software
-                None,                                                               # forward_read_length
-                None,                                                               # reverse_read_length
-                r.get_file_type(),                                                  # filetype
-                None,                                                               # filename
-                None,                                                               # MD5_checksum
-                None,                                                               # filetype
-                None,                                                               # filename
-                None,                                                               # MD5_checksum
+                bioproject_accession,           # bioproject_accession
+                biosample_accession,            # biosample_accession
+                sample_name,                    # sample_name
+                sample_name,                    # library_ID
+                None,                           # title/short description
+                None,                           # library_strategy (click for details)
+                None,                           # library_source (click for details)
+                None,                           # library_selection (click for details)
+                None,                           # library_layout
+                r.get_platform(),               # platform (click for details)
+                r.get_instrument_model(),       # instrument_model
+                design_desc,                    # design_description
+                None,                           # reference_genome_assembly (or accession)
+                None,                           # alignment_software
+                None,                           # forward_read_length
+                None,                           # reverse_read_length
+                r.get_file_type(),              # filetype
+                None,                           # filename
+                None,                           # MD5_checksum
+                None,                           # filetype
+                None,                           # filename
+                None,                           # MD5_checksum
             ])
 
-        unique_sample_names.add(r.get_value_from_xml_path('Sample/Name'))
+        unique_sample_names.add(sample_name)
 
     return rows
 
