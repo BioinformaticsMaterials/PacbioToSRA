@@ -25,6 +25,7 @@ from os.path import realpath, dirname
 APP_ROOT_FULLPATH = dirname(dirname(realpath(__file__)))
 sys.path.insert(1, APP_ROOT_FULLPATH)
 
+import concurrent
 import errno
 import logging
 import os
@@ -138,11 +139,18 @@ def generate_rows_for_files_worksheet(cell_analysis_results):
     :rtype                          list
     """
     logger.info('Creating Excel data for all file information...')
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        futures = dict((executor.submit(analysis.get_info_for_files), analysis) for analysis in cell_analysis_results)
+
     rows = []
-    for r in cell_analysis_results:
-        sample_name = r.get_value_from_xml_path('Sample/Name')
-        sample_plateid = r.get_value_from_xml_path('Sample/PlateId')
-        for f, info in r.get_info_for_files().iteritems():
+    for future in concurrent.futures.as_completed(futures):
+        analysis = futures[future]
+
+        sample_name = analysis.get_value_from_xml_path('Sample/Name')
+        sample_plateid = analysis.get_value_from_xml_path('Sample/PlateId')
+
+        for f, info in future.result().iteritems():
             rows.append([sample_name, sample_plateid, info['filename'], info['md5sum']])
 
     return rows
