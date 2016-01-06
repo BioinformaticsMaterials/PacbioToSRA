@@ -1,0 +1,143 @@
+pyFaspMgmt is a pure python implementation of the FASP management interface. 
+  Written by Charles Shiflett (c) Aspera 2015
+
+To install copy the entire pyFaspMgmt directory to the python application
+you want to integrate pyFaspMgmt with and then "import pyfaspmgmt". 
+
+
+Example application:
+
+  import sys
+  import time
+  import pyfaspmgmt
+
+  session = pyfaspmgmt.FaspSend(
+    "root",
+    "server.example.com",
+    src_files=['test/0','test/1', 'test/2'],
+    key_file=".ssh/id_rsa",
+    args = ['--precalculate-job-size',] )
+
+
+  while session.status() not in ("DONE", "ERROR"):
+    time.sleep(.5)
+    sys.stdout.write("\r%02d%% Complete" % session.pctComplete() )
+    sys.stdout.flush()
+
+  print ""
+
+  if session.status() == "DONE":
+    print "File Transfer Successful"
+  else:
+    print "Transfer Failed"
+    print "\n".join(session.errs)
+
+
+
+API:
+
+    class FaspSend
+     |  A python FASP Management Interface.
+     |  
+     |  Methods defined here:
+     |  
+     |  __init__(self, user, dest_host, src_files=[], password='', key_file='', dest_port=0, dest_files=[], args=[], dest_dir='', persistent=False)
+     |      Initialize a FASP Session ( user, destination )
+     |      optional arguments:  password, key_file, dest_port, src_files, dest_dir,
+     |                           args (command line arguments as a list), persistent
+     |      Examples: 
+     |      
+     |        Starting a regular session:
+     |      
+     |        session = FaspSend( "root", 
+     |                            "dest.example.com", 
+     |                            src_files = [ 'one, 'two' ],
+     |                            password = "Secret"
+     |                          )
+     |      
+     |        Starting a persistent session:
+     |        
+     |        session = FaspSend( "root", "dest.example.com", 
+     |                            persistent=True, password="Secret" )
+     |  
+     |  addFile(self, src, dest)
+     |      If persistent sessions is enabled transfer src and name it dest
+     |  
+     |  cancel(self)
+     |      Cancel current session.
+     |  
+     |  close(self)
+     |      Free all resources associated with transfer. Terminates active transfer.
+     |  
+     |  closePersistentSession(self)
+     |      Close persistent session. Use getStatus to check if session has completed.
+     |  
+     |  getParam(self, param)
+     |      Get a identifier from SESSION notification.
+     |  
+     |  pctComplete(self)
+     |      If precompute is enabled return the percent complete from 0 to 100
+     |  
+     |  status(self)
+     |      Returns the current session state, ( INIT, SESSION, DONE, or ERROR ).
+
+
+
+
+Configuration & Logging:
+
+When you import pyfaspmgmt a configuration and log file are automatically
+created in your current directory. You can control where pyfaspmgmt looks
+for it's configuration file by editing configPaths in conf.py.
+
+A typical faspmgmt.conf file:
+
+  [all]
+  sysid = Y1PyC5Rb-k30fVQ
+  installpath = /path/to/pyfaspmgmt
+  ascppath = /usr/bin/ascp
+  sessionno = 30
+  now = 1428135456
+  currentpid = 26075
+
+faspmgmt.conf must be writable as the configuration file is used to
+ensure that each session identifier is unique. The values defined in the
+config must be:
+
+  sysid = <A string unique to each conf file>
+  installpath = <path to write log files>
+  ascppath = <path to ascp binary>
+  sessionno = <a number, auto incremented and unique to each python instance>
+  now = <a number, seconds since epoch in UTC>
+  currentpid = <a number>
+
+The logging subsytem uses python's standard logging and by default logs are
+rotated every 10MB and a maximum of 5 logs are kept. In normal operation very
+little should be logged, however it is a good place to check if you are
+encountering errors.
+
+If you find that the verbosity of the logs is not sufficient to debug problems
+you encountered then enable debugging by setting:
+
+  debug = true
+
+in the configuration file. This will log almost everything the program does
+and is a good way to determine where a problem lies. The most important thing
+to look at when debugging is how ASCP is being called (just grep for ascp),
+then make sure that command works as expected outside of your application.
+
+
+
+Support:
+
+For general support contact support@asperasoft.com. If you need help with
+or would like to add a feature to pyFaspMgmt you can contact the Author at
+bear@asperasoft.com or bear@us.ibm.com. Comments/Suggestions are welcome
+as well.
+
+Thank you for using Aspera!
+
+
+
+
+
