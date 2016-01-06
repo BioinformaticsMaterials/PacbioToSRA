@@ -1,6 +1,10 @@
 import logging
 import os
 import subprocess
+import sys
+import time
+
+from PacbioToSRA.FaspManagerPython import pyfaspmgmt
 
 
 logger = logging.getLogger(__name__)
@@ -43,31 +47,28 @@ class SraSubmission(object):
         :param      files:  List of files to send.
         :type       files:  list
         """
-        for f in files:
-            self.submit_file(f)
-
-    def submit_file(self, f):
-        """Submits an individual file to NCBI.
-
-        :param      f:  File to send
-        :type       f:  string
-        """
-        if not self.ascp_cmd_exist():
-            raise Exception("Could not find Aspera's ascp command!")
-
-        try:
-            # Example bash command: /path/to/aspera/ascp -i /path/to/ssh_key -QT -l200m -k1 /path/to/file ncbi_username@upload.ncbi.nlm.nih.gov:/path/to/destination/folder
-            # TODO: Make this more configurable
-            subprocess.call([
-                self.ascp_cmd,
-                '-i', self.ssh_key_file,
+        session = pyfaspmgmt.FaspSend(
+            user=self.username,
+            remote_host=self.NCBI_SUBMISSION_SERVER,
+            src_files=files,
+            key_file=self.ssh_key_file,
+            dest_dir=self.dest_path,
+            args=[              # TODO: make these configurable
                 '-QT',
-                '-l200m',           # TODO: why limit  max transfer rate
-                '-k1',
-                f,
-                "{}@{}:{}".format(self.username, self.NCBI_SUBMISSION_SERVER, self.dest_path)
-            ])
-        except Exception as e:
-            logger.error("Submitting file failed: {}".format(f))
-            raise
+                '-l200m',       # TODO: why limit max transfer rate
+                '-k1'
+            ]
+        )
+
+        while session.status() not in ("DONE", "ERROR"):
+            time.sleep(.5)
+            sys.stdout.write("\r%02d%% Complete" % session.pctComplete())
+            sys.stdout.flush()
+
+        print ""
+
+        if session.status() == "DONE":
+            logging.info("File Transfer Successful")
+        else:
+            logging.error("Transfer Failed! Message: {}".format(session.errs))
 

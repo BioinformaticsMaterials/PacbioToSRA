@@ -213,7 +213,9 @@ def creat_excel_workbook(output_filename, files_ws_rows, sr_data_ws_rows):
     """
     logger.info("Creating {}...".format(output_filename))
     wb = ExcelSheetFromTemplate(output_filename)
+    logger.info('    Writing to files worksheet...')
     wb.write_to_files_worksheet(files_ws_rows)
+    logger.info('    Writing to sra data worksheet...')
     wb.write_to_sr_data_worksheet(sr_data_ws_rows)
 
 
@@ -239,11 +241,7 @@ def submit_files_to_ncbi(files, username, ssh_key):
     logger.info("Submitting files to NCBI...")
 
     sra = SraSubmission(username, ssh_key)
-    file_len = len(files)
-
-    for i in range(file_len):
-        logger.info("    ({}/{}) Sending file: {}".format(i+1, file_len, files[i]))
-        sra.submit_file(files[i])
+    sra.submit_files(files)
 
 
 if __name__ == '__main__':
@@ -272,8 +270,6 @@ if __name__ == '__main__':
         files_only.extend(result.get_files())
 
     submit_files_to_ncbi(files_only, username, ssh_key)
-
-    # TODO: confirm the upload
 
     logger.info("Complete!")
 
