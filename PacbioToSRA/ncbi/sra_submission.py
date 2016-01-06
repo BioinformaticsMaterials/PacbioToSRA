@@ -19,7 +19,7 @@ class SraSubmission(object):
 
         if not os.path.exists(ssh_key_file):
             raise Exception("File for ssh key does not exists!")
-        self.ssh_key_file = ssh_key_file
+        self.ssh_key_file = os.path.abspath(ssh_key_file)           # Aspera's ascp command requires an absolute path
 
         self.dest_path = dest_path
 
