@@ -15,18 +15,6 @@ This repo contains scripts, instructions, and examples on preparing PacBio seque
 
 
 ##Step 2. Prepare script's environment
-####Install Aspera software:
-
-*  Download and install the linux version of aspera-connect that contains the ascp command (http://downloads.asperasoft.com/en/downloads/50)
-*  Add Aspera's ascp command to your $PATH. Example:  
-```
-    $ export PATH='/path/to/ascp/command':$PATH
-```
-*  Verify that the Aspera's ascp is in your $PATH.  
-```
-    $ which ascp
-```
-
 ####Setup virtual environment:
 
 ```
