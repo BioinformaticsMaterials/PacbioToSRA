@@ -18,6 +18,7 @@ This repo contains scripts, instructions, and examples on preparing PacBio seque
 ####Setup virtual environment:
 
 ```
+(go to the root directory of this repo)
 $ virtualenv virtualenv_PacbioToSRA
 $ source virtualenv_PacbioToSRA/bin/activate
 $ pip install -r requirements.txt
