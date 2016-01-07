@@ -4,7 +4,7 @@ import subprocess
 import sys
 import time
 
-from PacbioToSRA.FaspManagerPython import pyfaspmgmt
+from PacbioToSRA.aspera.FaspManagerPython import pyfaspmgmt
 
 
 logger = logging.getLogger(__name__)
