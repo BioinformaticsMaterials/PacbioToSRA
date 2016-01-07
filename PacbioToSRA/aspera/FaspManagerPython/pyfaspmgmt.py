@@ -9,6 +9,7 @@ import tempfile
 import subprocess
 import Queue
 import pprint
+import glob
 
 from threading import Thread
 
@@ -17,20 +18,37 @@ faspMgmtSock=None
 running=True
 transferId=itertools.count()
 
-class EnumSuite(set):
-    def __getattr__(self, name):
-        if name in self:
-            return name
-        raise AttributeError
-
-ASPERA_ENV = EnumSuite(['ASPERA_SCP_PASS', 
-                        'ASPERA_SCP_COOKIE', 
-                        'ASPERA_SCP_TOKEN', 
-                        'ASPERA_SCP_FILEPASS',
-                        'ASPERA_SCP_LICENSE', 
-                        'ASPERA_SCP_DOCROOT'])
-
 activeTransfers={}
+
+gAscpRoot=Queue.Queue()
+
+def centralConnect(): 
+  global gAscpRoot
+
+  path = gAscpRoot.get_nowait()  
+
+  port_paths = glob.glob("%s/var/run/aspera/asperacentral.port" % path) + \
+               glob.glob("%s/var/run/aspera/*.optport" % path)
+
+
+  central = [] 
+
+  for port_fn in port_paths: 
+    try: 
+      portnum = 0
+      log.dbg("Reading port %s" % port_fn)
+      with open(port_fn) as cPort:
+         portnum = int(cPort.read())
+      c= socket.socket()
+      c.connect( ('127.0.0.1', int(portnum) ) )
+      central.append(c)
+      log.dbg("Success connecting to central")
+    except Exception, e:
+      log.err("Connecting to port %s; %s" % ( port_fn, str(e)))
+      central = False
+
+  return central
+
 
 def mgmt_connection( sock ):
   sock.settimeout(.1)
@@ -38,16 +56,16 @@ def mgmt_connection( sock ):
   uid = ""
   sessionActive = True
 
-  print "Started mgmt_connection"
-
   closeMgmt = False
+  central = []
 
   while 1:
     msg = {}
     if (notifications): 
       if 'FASP' not in notifications[0]:
-	log.err("BAD notif: %s", notifications[0])
-	notifications=notifications[i+1:]
+        log.err("BAD notif: %s" % notifications[0])
+        notifications = notifications[1:]
+        continue
       for i in range( 1, len(notifications) ):
         try: 
           line = notifications[i].strip()
@@ -61,7 +79,19 @@ def mgmt_connection( sock ):
             continue
           msg[k]=v
         else:
-          notifications=notifications[i+1:]
+          fm2 = "%s\n" %  "\n".join(notifications) 
+          #print "****************\n%s************" % fm2
+          try: 
+            central = centralConnect()
+          except Exception, e:
+            pass
+
+          for i in central: 
+            try: 
+              i.sendall(fm2)
+            except Exception, e: 
+              pass
+          #notifications=notifications[i+1:]
           log.dbg("Got message from ASCP %s" % pprint.pformat(msg))
           try:
             activeTransfers[msg['UserStr']][0].put(msg)
@@ -86,20 +116,20 @@ def mgmt_connection( sock ):
         pass
       if msg:
         log.dbg("Sending msg to ascp '%s'" % msg)
-        sock.sendall(msg.encode("utf-8"))
+        sock.sendall(msg)
         continue
           
     if closeMgmt:
-      print "Closing mgmt connection; socket closed"     
       log.dbg("Closing mgmt connection; socket closed")     
       return
 
     gotData = False
     gotTimeout = False
+    notifications = []
+
     h = ""
     try: 
-      h = sock.recv(16384).decode("utf-8")
-      log.dbg("Received raw FASP message: %s" % h)
+      h = sock.recv(16384)
       notifications += h.splitlines()
       if h:
         gotData = True
@@ -117,9 +147,9 @@ def mgmt_connection( sock ):
 def ascp_thread( args, env, queue ):
   try: 
     env.update(os.environ)  
-    output = subprocess.check_output( args, shell=False, env=env, stderr=subprocess.STDOUT )
+    output = subprocess.check_output( args, env=env, stderr=subprocess.STDOUT )
     queue.put(None)
-    log.dbg("ASCP exited normally (%s)" % output.strip())
+    log.info("ASCP exited normally (%s)" % output.strip())
   except subprocess.CalledProcessError, e:
     msg = "ASCP exited with errorcode=%d. " % e.returncode
     if e.output.strip():
@@ -154,8 +184,13 @@ class Listener:
     except Exception, e:
       log.dbg( "On Receive: %s" % e )
 
+def getPyFaspId():
+  return "pyFM_%s.%x.%x" % ( conf.cfg.get("all", "sysId"),
+                             int(conf.cfg.get("all", "sessionNo")),
+                             transferId.next() )
 
-class FaspTransfer (object):
+
+class FaspSend:
   """
   A python FASP Management Interface.
   """
@@ -163,7 +198,6 @@ class FaspTransfer (object):
 
   s = None
   fun = None
-  sId = None 
   dirty = True
   ident = "Not Assigned"
   stat = "Not Started"
@@ -171,57 +205,44 @@ class FaspTransfer (object):
   errs = []
   pct = 0
   totalBytes = 0
+  bytesTransferred = 0
   keepalive = False
   ascp_isrunning = False
   files = []
 
-  def build_path( self, src, dst, old, user, remote_host, args, dest_dir=".", upload=True ):
+  def build_filelist( self, src, dst, old, args ):
     if not old:
-      if src:
-        with tempfile.NamedTemporaryFile( delete=False ) as tmp:
-          fi_list = []
-          if src and dst:
-            args.append("--file-pair-list") 
-            for i in zip(src, dst):
-              fi_list = fi_list + list(i)
-          else:
-            args.append("--file-list") 
-            fi_list = src
-          tmp.write("\n".join(fi_list).encode("utf-8"))
-          self.file_list=tmp.name
-          args.append(self.file_list)
-
-      args.append ("%s" % dest_dir)
+      with tempfile.NamedTemporaryFile( delete=False ) as tmp:
+        fi_list = []
+        if src and dst:
+          args.append("--file-pair-list") 
+          for i in zip(src, dst):
+            fi_list = fi_list + list(i)
+        else:
+          args.append("--file-list") 
+          fi_list = src
+        tmp.write("\n".join(fi_list))
+        tmp.write("\n")
+        self.file_list=tmp.name
+        args.append(self.file_list)
     else:
-      if upload:
-        if src:
-          for i in src:
-            args.append(i)
-        args.append ("%s@%s:%s" % (user, remote_host, dest_dir) )
-      else:
-        if src:
-          for i in src:
-            args.append ("%s@%s:%s" % (user, remote_host, i) ) 
-        args.append ("%s" % dest_dir)
+      for i in src:
+        args.append(i)
 
 
   def __init__(self, 
-    user, remote_host, src_files=[], password="", key_file="", remote_tcp_port=0, remote_fasp_port=0, 
-    dest_files=[], dest_dir=".", 
-    target_rate=0,
-    cookie="", token="", ear_passphrase="", 
-    upload=True, persistent=False,
-    args=[], old=False
+    user, dest_host, src_files=[], password="", key_file="", dest_port=0, 
+    dest_files=[], args=[], dest_dir=".", persistent=False, old=False, 
+    ascpPath=None, ascpRoot=None
   ):
     """ Initialize a FASP Session ( user, destination )
-    optional arguments:  password, key_file, remote_port, src_files, dest_dir,
-                         args (command line arguments as a list), 
-                         persistent, upload
+    optional arguments:  password, key_file, dest_port, src_files, dest_dir,
+                         args (command line arguments as a list), persistent
     Examples: 
 
       Starting a regular session:
 
-      session = FaspTransfer( "root", 
+      session = FaspSend( "root", 
                           "dest.example.com", 
                           src_files = [ 'one, 'two' ],
                           password = "Secret"
@@ -229,30 +250,16 @@ class FaspTransfer (object):
 
       Starting a persistent session:
       
-      session = FaspTransfer( "root", "dest.example.com", 
+      session = FaspSend( "root", "dest.example.com", 
                           persistent=True, password="Secret" )
-
-      Starting a download session:
-
-      session = FaspTransfer( "root", 
-                    "dest.example.com", 
-                    src_files = [ 'one, 'two' ],
-                    password = "Secret",
-                    upload=False
-                  )
  
     """
     self.files += src_files
-    self.remote_host = remote_host
+    self.dest_host = dest_host
     env = {}
-    self.sId = transferId.next()
     self.stat = "Not Started"
     self.totalBytes = 0
     self.keepalive = False
-    self.upload = upload
-
-    if old and persistent:
-      raise ValueError("Upgrade ascp to 3.x and higher to use persistent mode")
 
     if not src_files and not persistent:
       raise ValueError("No files specified")
@@ -260,26 +267,23 @@ class FaspTransfer (object):
     if src_files and persistent:
       raise ValueError("Can not specify src_files with persistent")
 
-    args = [ conf.cfg.get("all", "ascpPath") ] + args
+    if ascpRoot: 
+      log.err("pyfaspmgmt: set ascpRoot to %s" % ascpRoot)
+      global gAscpRoot
+      gAscpRoot.put(ascpRoot)
 
-    if remote_tcp_port:
-      args.append("-P")
-      args.append(str(remote_tcp_port))
 
-    if remote_fasp_port:
-      args.append("-O")
-      args.append(str(remote_fasp_port))
-
-    if target_rate:
-      args.append("-l")
-      args.append(str(target_rate))
+    if ascpPath:
+      args = [ ascpPath, ] + args
+    else:
+      args = [ conf.cfg.get("all", "ascpPath") ] + args
 
     if (key_file): 
       args.append("-i")
       args.append(key_file)
 
     if (password):
-      env[ASPERA_ENV.ASPERA_SCP_PASS]=password
+      env['ASPERA_SCP_PASS']=password
 
     if (persistent):
       args.append('--keepalive')
@@ -287,20 +291,6 @@ class FaspTransfer (object):
       # For 2.x;
       #args.append('--mode')
       #args.append('send')
-
-    if cookie:
-      env[ASPERA_ENV.ASPERA_SCP_COOKIE] = cookie
-
-    if token:
-      env[ASPERA_ENV.ASPERA_SCP_TOKEN] = token
-
-    if ear_passphrase:
-      env[ASPERA_ENV.ASPERA_SCP_FILEPASS] = ear_passphrase
-      args.append("--file-crypt")
-      if self.upload:
-        args.append("encrypt")
-      else:
-        args.append("decrypt")
       
 
     args.append("-q")
@@ -314,26 +304,27 @@ class FaspTransfer (object):
           raise ValueError("Could not get Fasp Management Port")
     args.append(str(faspMgmtPort))
     args.append("-u")
-    self.ident= "pyFM_%s.%x.%x" % ( conf.cfg.get("all", "sysId"),
-                                     int(conf.cfg.get("all", "sessionNo")),
-                                     self.sId  )
+    self.ident= getPyFaspId()
     args.append(self.ident)
     # for 2.x;
-    #args.append("%s@%s:%s" % (user, remote_host, dest_dir) )  
+    #args.append("%s@%s:%s" % (user, dest_host, dest_dir) )  
 
     # for 3.x;
     if not old:
       args.append('--mode')
-      if self.upload:
-        args.append('SEND')
-      else:
-        args.append('RECV')
+      args.append('SEND')
       args.append('--host')
-      args.append(remote_host)
+      args.append(dest_host)
       args.append('--user')
       args.append(user)
 
-    self.build_path( src_files, dest_files, old, user, remote_host, args, dest_dir, self.upload )
+    self.build_filelist( src_files, dest_files, old, args )
+
+    if not old:
+      if dest_dir:
+        args.append ("%s" % dest_dir) 
+    else:
+      args.append ("%s@%s:%s" % (user, dest_host, dest_dir) ) 
 
     log.info("(%s) Calling ascp with %s" % (self.ident, " ".join(args)) )
     log.info("(%s) File list = [%s]" % (self.ident, ",".join(src_files)) )
@@ -357,6 +348,11 @@ class FaspTransfer (object):
       log.dbg("Ignoring message")
       return self.consume_msg()
 
+    try: 
+      self.bytesTransferred = int(msg["FileBytes"]) 
+    except:
+      pass
+   
     if msg["Type"] in ( "NOTIFICATION" ):
       self.notif = msg
       try:
@@ -375,6 +371,8 @@ class FaspTransfer (object):
       self.params = msg
 
     if msg["Type"] in ( "ERROR", "FILEERROR" ):
+      if not msg.has_key("Description"):
+        msg["Description"] = "Error encountered but no error message provided"
       if msg["Type"] == "FILEERROR":
         self.errs.append( "File '%s' %s" % (msg["File"], msg["Description"]) )
       else:
@@ -393,7 +391,7 @@ class FaspTransfer (object):
     if msg["Type"] in ( "STATS" ):
       self.stats = msg
 
-    self.consume_msg()
+    return self.consume_msg()
     
 
   def status(self):
@@ -411,6 +409,7 @@ class FaspTransfer (object):
 
       if res == None:
         # Make sure we have consumed all messages.
+        self.consume_msg()
         time.sleep(0.2)
         self.consume_msg()
 
@@ -483,7 +482,7 @@ Operation: Linger
       return 100
 
     try:
-      pct = (int(self.stats["FileBytes"]) * 100) / self.totalBytes  
+      pct = (int(self.bytesTransferred) * 100) / self.totalBytes  
       if pct > 100:
         pct = 99
       return pct
@@ -562,7 +561,7 @@ def start_mgmt( pyFaspMgmtPort=33500, pyFaspMgmtHost="localhost", recursionLevel
     pyFaspMgmtHost = conf.cfg.get("all", "mgmtHost")
   except:
     pass
-  
+
   try:
     listener = Listener( pyFaspMgmtHost, pyFaspMgmtPort, mgmt_connection )
   except:
@@ -599,34 +598,7 @@ def fasp_exit():
   except:
     pass
 
-class FaspSend (FaspTransfer):
-  def __init__(self,
-    user, remote_host, src_files=[], password="", key_file="", 
-    remote_tcp_port=0, remote_fasp_port=0, 
-    dest_files=[], dest_dir=".", 
-    target_rate=0,
-    cookie="", token="", ear_passphrase="", 
-    persistent=False,
-    args=[], old=False):
-    FaspTransfer.__init__(self, user, remote_host, src_files=src_files, password=password, key_file=key_file, 
-      remote_tcp_port=remote_tcp_port, remote_fasp_port=remote_fasp_port, dest_files=dest_files, dest_dir=dest_dir, 
-      target_rate=target_rate, cookie=cookie, 
-      token=token, ear_passphrase=ear_passphrase, upload=True, persistent=persistent, args=args, old=old)
 
-
-class FaspReceive (FaspTransfer):
-  def __init__(self,
-    user, remote_host, src_files=[], password="", key_file="", 
-    remote_tcp_port=0, remote_fasp_port=0, 
-    dest_files=[], dest_dir=".", 
-    target_rate=0,
-    cookie="", token="", ear_passphrase="", 
-    persistent=False,
-    args=[], old=False):
-    FaspTransfer.__init__(self, user, remote_host, src_files=src_files, password=password, key_file=key_file, 
-      remote_tcp_port=remote_tcp_port, remote_fasp_port=remote_fasp_port, dest_files=dest_files, dest_dir=dest_dir, 
-      target_rate=target_rate, cookie=cookie, 
-      token=token, ear_passphrase=ear_passphrase, upload=False, persistent=persistent, args=args, old=old)
     
 
 signal.signal(signal.SIGINT, ctrlc_handler)
