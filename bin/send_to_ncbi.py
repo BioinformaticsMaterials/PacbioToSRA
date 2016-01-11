@@ -143,14 +143,22 @@ def generate_rows_for_files_worksheet(cell_analysis_results):
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         futures = dict((executor.submit(analysis.get_info_for_files), analysis) for analysis in cell_analysis_results)
 
+    total_cell_analysis_results = len(cell_analysis_results)
+    analysis_count = 0
     rows = []
     for future in concurrent.futures.as_completed(futures):
         analysis = futures[future]
+        files_info = future.result()
+
+        analysis_count += 1
+        logger.info("    ({}/{}) Generating specific information for all files ({}) in: {}".format(
+            analysis_count, total_cell_analysis_results, len(files_info), analysis.root_dir
+        ))
 
         sample_name = analysis.get_value_from_xml_path('Sample/Name')
         sample_plateid = analysis.get_value_from_xml_path('Sample/PlateId')
 
-        for f, info in future.result().iteritems():
+        for f, info in files_info.iteritems():
             rows.append([sample_name, sample_plateid, info['filename'], info['md5sum']])
 
     return rows
