@@ -1,12 +1,13 @@
 import concurrent.futures
 import hash_utils
+import logging
 
 from glob import glob
 from os.path import join, isdir, basename
 from xml.dom import minidom
 
 
-# TODO: logger
+logger = logging.getLogger(__name__)
 
 
 class CellAnalysisResult(object):
@@ -113,6 +114,8 @@ class CellAnalysisResult(object):
         :return:    A list of files with additional info
         :rtype      list
         """
+        logger.debug("Getting file info for all files in: {}".format(self.root_dir))
+
         if self.file_info:
             return self.file_info
 
@@ -132,13 +135,24 @@ class CellAnalysisResult(object):
 
         # files are huge so calculate md5sum for several files in parallel
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            futures = dict((executor.submit(hash_utils.md5, f), f) for f in files)
+            futures = {}
+            i = 0
+            total_files = len(files)
+
+            for f in files:
+                i += 1
+                logger.debug("   ({}/{}) Submitting md5sum job to process pool for file: {}".format(i, total_files, f))
+                futures[executor.submit(hash_utils.md5, f)] = f
 
         for future in concurrent.futures.as_completed(futures):
+            md5sum = future.result()
+
+            logger.debug("md5sum results. file: {} md5sum: {}".format(f, md5sum))
+
             f = futures[future]
             file_infos[f] = {
                 'filename': basename(f),
-                'md5sum': future.result(),
+                'md5sum': md5sum,
             }
 
         return file_infos

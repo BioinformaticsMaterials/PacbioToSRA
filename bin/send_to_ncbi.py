@@ -141,7 +141,16 @@ def generate_rows_for_files_worksheet(cell_analysis_results):
     logger.info('Creating Excel data for all file information...')
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-        futures = dict((executor.submit(analysis.get_info_for_files), analysis) for analysis in cell_analysis_results)
+        logging.debug("Submitting get info for files job to Thread Pool...")
+
+        futures = {}
+        job_total = len(cell_analysis_results)
+        i = 0
+
+        for analysis in cell_analysis_results:
+            i += 1
+            logging.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
+            futures[executor.submit(analysis.get_info_for_files)] = analysis
 
     total_cell_analysis_results = len(cell_analysis_results)
     analysis_count = 0
