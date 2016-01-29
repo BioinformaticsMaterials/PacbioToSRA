@@ -92,24 +92,32 @@ def upload(input_fofn_file, username, ssh_key_file):
               help='Username to use to upload data sets to NCBI.')
 @click.option('-k', '--ssh_key_file', 'ssh_key_file',
               required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='SSH key  to use to upload data sets to NCBI.')
+              help='SSH key to use to upload data sets to NCBI.')
+@click.option('-m', '--enable_multiprocess', 'enable_multiprocess',
+              is_flag=True,
+              help='Enable multiprocess. Will create excel document and upload files in parallel. ' +
+                   'This will speed up the entire process but will require more hardware power')
 def create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, excel_output_file,
-                                 username, ssh_key_file):
-    # used multiple processes as workaround for multithread problem with Aspera. "ValueError: signal only works in main thread"
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        fs = [
-            executor.submit(
-                __do_create_excel_file, input_fofn_file, bioproject_id, biosample_id, excel_output_file
-            ),
-            executor.submit(
-                __do_upload, input_fofn_file, username, ssh_key_file
-            ),
-        ]
+                                 username, ssh_key_file, enable_multiprocess):
 
-    # don't need to get results from processes
-    # for f in concurrent.futures.as_completed(fs):
-    #     pass
-    #     r = f.result()
+    excel_args = (input_fofn_file, bioproject_id, biosample_id, excel_output_file)
+    upload_args = (input_fofn_file, username, ssh_key_file)
+
+    if enable_multiprocess:
+        # used multiple processes as workaround for multithread problem with Aspera. "ValueError: signal only works in main thread"
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            fs = [
+                executor.submit(__do_create_excel_file, *excel_args),
+                executor.submit(__do_upload, *upload_args),
+            ]
+
+        # don't need to get results from processes
+        # for f in concurrent.futures.as_completed(fs):
+        #     pass
+        #     r = f.result()
+    else:
+        __do_create_excel_file(*excel_args)
+        __do_upload(*upload_args)
 
     logger.info('Complete!')
 
