@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 EXCEL_OUTPUT_FILE_FORMAT = 'sra_submission_{}.xlsx'
+MIN_THREADS = 2
+MAX_THREADS = 100
 
 
 ############################################
@@ -53,8 +55,15 @@ def cli():
               help="Name of the output file. Output format is .xslx. Default file name: {}".format(
                       EXCEL_OUTPUT_FILE_FORMAT.format('<date>')
               ))
-def create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file):
-    __do_create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file)
+@click.option('-t', '--num_threads', 'num_threads',
+              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS),
+              help='Number of threads to use. This decreases total process time but requires more system resources.' +
+              "Range must be between {} and {}".format(MIN_THREADS, MAX_THREADS))
+def create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads):
+    __func_error_wrapper(
+        __do_create_excel_file,
+        input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads
+    )
 
 
 @cli.command(help='Uploads the datasets in the input.fofn file to NCBI.')
@@ -68,7 +77,10 @@ def create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output
               required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
               help='SSH key  to use to upload data sets to NCBI.')
 def upload(input_fofn_file, username, ssh_key_file):
-    __do_upload(input_fofn_file, username, ssh_key_file)
+    __func_error_wrapper(
+        __do_upload,
+        input_fofn_file, username, ssh_key_file
+    )
 
 
 @cli.command(help='Creates the Excel file that contains the dataset info required by NCBI and uplaods them to NCBI.')
@@ -96,56 +108,36 @@ def upload(input_fofn_file, username, ssh_key_file):
 @click.option('-m', '--enable_multiprocess', 'enable_multiprocess',
               is_flag=True,
               help='Enable multiprocess. Will create excel document and upload files in parallel. ' +
-                   'This will speed up the entire process but will require more hardware power')
+                   'This will speed up the entire process but will require more system resources.')
+@click.option('-t', '--num_threads', 'num_threads',
+              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS),
+              help='Number of threads to use. This decreases total process time but requires more system resources.' +
+              "Range must be between {} and {}".format(MIN_THREADS, MAX_THREADS))
 def create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, excel_output_file,
-                                 username, ssh_key_file, enable_multiprocess):
-
-    excel_args = (input_fofn_file, bioproject_id, biosample_id, excel_output_file)
-    upload_args = (input_fofn_file, username, ssh_key_file)
-
-    if enable_multiprocess:
-        # used multiple processes as workaround for multithread problem with Aspera. "ValueError: signal only works in main thread"
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            fs = [
-                executor.submit(__do_create_excel_file, *excel_args),
-                executor.submit(__do_upload, *upload_args),
-            ]
-
-        # don't need to get results from processes
-        # for f in concurrent.futures.as_completed(fs):
-        #     pass
-        #     r = f.result()
-    else:
-        __do_create_excel_file(*excel_args)
-        __do_upload(*upload_args)
-
-    logger.info('Complete!')
+                                 username, ssh_key_file, enable_multiprocess, num_threads):
+    __func_error_wrapper(
+        __do_create_excel_file_and_upload,
+        input_fofn_file, bioproject_id, biosample_id, excel_output_file, username, ssh_key_file,
+        enable_multiprocess, num_threads
+    )
 
 
 ###########################################
 # Functions to create the excel file
 ###########################################
 
-def __error_if_ascp_not_available(username, ssh_key_file):
-    # return if ascp command does not exist
-    if not SraSubmission(username, ssh_key_file).ascp_cmd_exist():
-        logger.error("Could not find Aspera's ascp command!")
-        sys.exit(errno.ENOENT)      # file/dir does not exist status code
-
-
-def __do_create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file):
+def __do_create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads):
     if not excel_output_file:
         excel_output_file = __generate_excel_file_name()
 
     # os.path.exists checks if file and dir already exist
     if os.path.exists(excel_output_file):
-        logger.error("File already exist: {}".format(excel_output_file))
-        sys.exit(errno.ENOENT)      # file/dir does not exist status code
+        raise Exception("File already exist: {}".format(excel_output_file))
 
     cell_analysis_results = __generate_cell_analysis_results_from_fofn(input_fofn_file)
 
     sr_data_ws_rows = __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analysis_results)
-    files_ws_rows = __generate_rows_for_files_worksheet(cell_analysis_results)
+    files_ws_rows = __generate_rows_for_files_worksheet(cell_analysis_results, num_threads)
 
     __create_excel_workbook(excel_output_file, files_ws_rows, sr_data_ws_rows)
 
@@ -199,13 +191,13 @@ def __generate_cell_analysis_results(dirs):
     """
     results = []
     for d in dirs:
-        logger.info("Retrieving cell analysis result data from: {}".format(d))
+        logger.info("Retrieving cell analysis data from: {}".format(d))
         results.append(CellAnalysisResult(d))
 
     return results
 
 
-def __generate_rows_for_files_worksheet(cell_analysis_results):
+def __generate_rows_for_files_worksheet(cell_analysis_results, num_threads=0):
     """Generates all the rows for the worksheet that contains information on all the files.
 
     :param  cell_analysis_results:  List of all cell analysis result info
@@ -213,10 +205,45 @@ def __generate_rows_for_files_worksheet(cell_analysis_results):
     :return:                        List of rows to insert into an excel worksheet
     :rtype                          list
     """
-    logger.info('Creating Excel data for all file information...')
+    logger.info('Generating row data for files worksheet...')
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-        logging.debug("Submitting get info for files job to Thread Pool...")
+    if num_threads > 1:
+        return __do_generate_rows_for_files_worksheet_async(cell_analysis_results, num_threads)
+    else:
+        return __do_generate_rows_for_files_worksheet(cell_analysis_results)
+
+
+def __do_generate_rows_for_files_worksheet(cell_analysis_results):
+    """Generates all the rows for the worksheet that contains information on all the files.
+
+    :param  cell_analysis_results:  List of all cell analysis result info
+    :type   cell_analysis_results:  list
+    :return:                        List of rows to insert into an excel worksheet
+    :rtype                          list
+    """
+    total_cell_analysis_results = len(cell_analysis_results)
+    analysis_count = 0
+    rows = []
+
+    for analysis in cell_analysis_results:
+        analysis_count += 1
+        files_info = analysis.get_info_for_files()
+
+        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analysis_results))
+
+    return rows
+
+
+def __do_generate_rows_for_files_worksheet_async(cell_analysis_results, max_threads=0):
+    """Generates all the rows for the worksheet that contains information on all the files.
+
+    :param  cell_analysis_results:  List of all cell analysis result info
+    :type   cell_analysis_results:  list
+    :return:                        List of rows to insert into an excel worksheet
+    :rtype                          list
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        logger.debug("Submitting job to get file info to Thread Pool...")
 
         futures = {}
         job_total = len(cell_analysis_results)
@@ -224,26 +251,34 @@ def __generate_rows_for_files_worksheet(cell_analysis_results):
 
         for analysis in cell_analysis_results:
             i += 1
-            logging.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
+            logger.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
             futures[executor.submit(analysis.get_info_for_files)] = analysis
 
     total_cell_analysis_results = len(cell_analysis_results)
     analysis_count = 0
     rows = []
+
     for future in concurrent.futures.as_completed(futures):
+        analysis_count += 1
         analysis = futures[future]
         files_info = future.result()
 
-        analysis_count += 1
-        logger.info("    ({}/{}) Generating specific information for all files ({}) in: {}".format(
-            analysis_count, total_cell_analysis_results, len(files_info), analysis.root_dir
-        ))
+        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analysis_results))
 
-        sample_name = analysis.get_value_from_xml_path('Sample/Name')
-        sample_plateid = analysis.get_value_from_xml_path('Sample/PlateId')
+    return rows
 
-        for f, info in files_info.iteritems():
-            rows.append([sample_name, sample_plateid, info['filename'], info['md5sum']])
+
+def __generate_rows(analysis, files_info, file_count, total_file_count):
+    logger.info("    ({}/{}) Generating specific information for all files ({}) in: {}".format(
+        file_count, total_file_count, len(files_info), analysis.root_dir
+    ))
+
+    sample_name = analysis.get_value_from_xml_path('Sample/Name')
+    sample_plateid = analysis.get_value_from_xml_path('Sample/PlateId')
+
+    rows = []
+    for f, info in files_info.iteritems():
+        rows.append([sample_name, sample_plateid, info['filename'], info['md5sum']])
 
     return rows
 
@@ -261,7 +296,7 @@ def __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_anal
     :return:                        Rows to insert into an excel worksheet
     :rtype                          list
     """
-    logger.info('Creating Excel data for cell analysis...')
+    logger.info('Generating row data for sr data worksheet...')
     rows = []
     unique_sample_names = set()
     for r in cell_analysis_results:
@@ -316,20 +351,15 @@ def __create_excel_workbook(output_filename, files_ws_rows, sr_data_ws_rows):
     wb.write_to_sr_data_worksheet(sr_data_ws_rows)
 
 
-def __generate_excel_file_name():
-    """ Create an Excel workbook output file name with the current date.
-
-    :return:    Name of Excel file
-    :rtype      string
-    """
-    return EXCEL_OUTPUT_FILE_FORMAT.format(datetime.now().strftime("%Y%m%d%H%M"))
-
-
 ###########################################
 # Functions to upload to NCBI
 ###########################################
 
 def __do_upload(input_fofn_file, username, ssh_key_file):
+    # exit if ascp command does not exist
+    if not SraSubmission(username, ssh_key_file).ascp_cmd_exist():
+        raise Exception("Could not find Aspera's ascp command!")
+
     cell_analysis_results = __generate_cell_analysis_results_from_fofn(input_fofn_file)
 
     # Get all files to upload
@@ -339,10 +369,62 @@ def __do_upload(input_fofn_file, username, ssh_key_file):
 
     logger.info("Submitting files to NCBI...")
 
-    sra = SraSubmission(username, ssh_key_file)
-    sra.submit_files(files_only)
+    try:
+        SraSubmission(username, ssh_key_file).submit_files(files_only)
+        logger.info('Upload complete.')
+    except:
+        logger.error('Upload failure!')
+        raise
 
-    logger.info('Upload complete.')
+
+###########################################
+# Functions for whole process
+###########################################
+
+def __do_create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, excel_output_file,
+                                      username, ssh_key_file, enable_multiprocess, num_threads):
+
+    excel_args = (input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads)
+    upload_args = (input_fofn_file, username, ssh_key_file)
+
+    if enable_multiprocess:
+        # used multiple processes as workaround for multithread problem with Aspera. "ValueError: signal only works in main thread"
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            fs = [
+                executor.submit(__do_create_excel_file, *excel_args),
+                executor.submit(__do_upload, *upload_args),
+            ]
+
+        # just to bubble up the exceptions
+        for f in concurrent.futures.as_completed(fs):
+            f.result()
+
+    else:
+        __do_create_excel_file(*excel_args)
+        __do_upload(*upload_args)
+
+
+###########################################
+# Misc.
+###########################################
+
+def __generate_excel_file_name():
+    """ Create an Excel workbook output file name with the current date.
+
+    :return:    Name of Excel file
+    :rtype      string
+    """
+    return EXCEL_OUTPUT_FILE_FORMAT.format(datetime.now().strftime("%Y%m%d%H%M"))
+
+
+def __func_error_wrapper(func, *args):
+    try:
+        func(*args)
+        logger.info('Complete')
+    except Exception as e:
+        logger.error(e.message)
+        logger.error('An error was encountered!')
+        sys.exit(1)
 
 
 if __name__ == '__main__':
