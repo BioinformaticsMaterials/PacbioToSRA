@@ -12,7 +12,7 @@ import logging
 import os
 
 from datetime import datetime
-from PacbioToSRA.cell_analysis_result import CellAnalysisResult
+from PacbioToSRA.cell_analysis_result import CellAnalysis
 from PacbioToSRA.ncbi.excel_sheet_from_template import ExcelSheetFromTemplate
 from PacbioToSRA.ncbi.sra_submission import SraSubmission
 
@@ -192,7 +192,7 @@ def __generate_cell_analysis_results(dirs):
     results = []
     for d in dirs:
         logger.info("Retrieving cell analysis data from: {}".format(d))
-        results.append(CellAnalysisResult(d))
+        results.append(CellAnalysis(d))
 
     return results
 

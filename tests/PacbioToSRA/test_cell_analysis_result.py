@@ -4,11 +4,11 @@ from PacbioToSRA.cell_analysis_result import *
 from tests import *
 
 
-class TestCellAnalysisResult(unittest.TestCase):
+class TestCellAnalysis(unittest.TestCase):
     """To run these tests:
-    $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis_result
-    $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis_result.TestCellAnalysisResult
-    $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis_result.TestCellAnalysisResult.test_directory_does_not_exist
+    $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis
+    $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis.TestCellAnalysis
+    $ python -m unittest -v tests.PacbioToSRA.test_cell_analysis.TestCellAnalysis.test_directory_does_not_exist
 
     To run all test:
     $ python -m unittest discover -v
@@ -16,30 +16,30 @@ class TestCellAnalysisResult(unittest.TestCase):
 
     def test_directory_does_not_exist(self):
         with self.assertRaises(OSError):
-            CellAnalysisResult('path/does/not/exist')
+            CellAnalysis('path/does/not/exist')
 
     def test_get_instrument_model_for_h5_files(self):
         self.assertEqual(
-            CellAnalysisResult.RS2,
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_instrument_model()
+            CellAnalysis.RS2,
+            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_instrument_model()
         )
 
     def test_get_instrument_model_for_bam_files(self):
         self.assertEqual(
-            CellAnalysisResult.SEQUEL,
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_instrument_model()
+            CellAnalysis.SEQUEL,
+            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_instrument_model()
         )
 
     def test_get_file_type_for_h5_files(self):
         self.assertEqual(
-            CellAnalysisResult.HDF5_FILE_TYPE,
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_file_type()
+            CellAnalysis.HDF5_FILE_TYPE,
+            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_file_type()
         )
 
     def test_get_file_type_for_bam_files(self):
         self.assertEqual(
-            CellAnalysisResult.BAM_FILE_TYPE,
-            CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_file_type()
+            CellAnalysis.BAM_FILE_TYPE,
+            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_file_type()
         )
 
     def test_get_value_from_xml_path_from_h5_files(self):
@@ -71,7 +71,7 @@ class TestCellAnalysisResult(unittest.TestCase):
 
         ]
 
-        c = CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH)
+        c = CellAnalysis(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH)
 
         for test in test_cases:
             self.assertEqual(test['expected_value'], c.get_value_from_xml_path(test['input']))
@@ -105,7 +105,7 @@ class TestCellAnalysisResult(unittest.TestCase):
 
         ]
 
-        c = CellAnalysisResult(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH)
+        c = CellAnalysis(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH)
 
         for test in test_cases:
             self.assertEqual(test['expected_value'], c.get_value_from_xml_path(test['input']))

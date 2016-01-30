@@ -10,7 +10,7 @@ from xml.dom import minidom
 logger = logging.getLogger(__name__)
 
 
-class CellAnalysisResult(object):
+class CellAnalysis(object):
 
     # constants
     PACB_SMART_ANALYSIS = 'PACBIO_SMRT'
