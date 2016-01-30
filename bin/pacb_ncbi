@@ -12,7 +12,7 @@ import logging
 import os
 
 from datetime import datetime
-from PacbioToSRA.cell_analysis_result import CellAnalysis
+from PacbioToSRA.cell_analysis import CellAnalysis
 from PacbioToSRA.ncbi.excel_sheet_from_template import ExcelSheetFromTemplate
 from PacbioToSRA.ncbi.sra_submission import SraSubmission
 
@@ -132,21 +132,21 @@ def __do_create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_o
 
     # os.path.exists checks if file and dir already exist
     if os.path.exists(excel_output_file):
-        raise Exception("File already exist: {}".format(excel_output_file))
+        raise Exception("File/Directory already exist: {}".format(excel_output_file))
 
-    cell_analysis_results = __generate_cell_analysis_results_from_fofn(input_fofn_file)
+    cell_analyses = __generate_cell_analyses_from_fofn(input_fofn_file)
 
-    sr_data_ws_rows = __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analysis_results)
-    files_ws_rows = __generate_rows_for_files_worksheet(cell_analysis_results, num_threads)
+    sr_data_ws_rows = __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analyses)
+    files_ws_rows = __generate_rows_for_files_worksheet(cell_analyses, num_threads)
 
     __create_excel_workbook(excel_output_file, files_ws_rows, sr_data_ws_rows)
 
     logger.info('Excel document created.')
 
 
-def __generate_cell_analysis_results_from_fofn(input_fofn_file):
-    input_fofn_dirs = __extract_dirs_from_fofn(input_fofn_file)
-    return __generate_cell_analysis_results(input_fofn_dirs)
+def __generate_cell_analyses_from_fofn(input_fofn_file):
+    dirs = __extract_dirs_from_fofn(input_fofn_file)
+    return __generate_cell_analyses(dirs)
 
 
 def __extract_dirs_from_fofn(input_fofn_file):
@@ -155,9 +155,9 @@ def __extract_dirs_from_fofn(input_fofn_file):
     :param  input_fofn_file:    The file that contains the cell analysis result files.
     :type   input_fofn_file:    string
     :return:                    Root directories of the cell analysis results.
-    :rtype                      list
+    :rtype                      set
     """
-    logger.info("Extracting root directory from: {} ....".format(input_fofn_file))
+    logger.info("Extracting base directory from: {} ....".format(input_fofn_file))
     dirs = set()
     with open(input_fofn_file, 'r') as fp:
         for f in fp:
@@ -169,19 +169,17 @@ def __extract_dirs_from_fofn(input_fofn_file):
                 continue
 
             if not os.path.exists(d):
-                logger.error("Reading input_fofn_file. Directory does not exist: {}".format(d))
-                sys.exit(errno.ENOENT)      # file/dir does not exist status code
+                raise Exception("Reading input_fofn_file. Directory does not exist: {}".format(d))
 
             dirs.add(d)
 
     if not dirs:
-        logger.error('No directories found in input.fofn file.')
-        sys.exit(errno.ENODATA)
+        raise Exception('No directories found in input.fofn file.')
 
     return dirs
 
 
-def __generate_cell_analysis_results(dirs):
+def __generate_cell_analyses(dirs):
     """Get cell analys result information from all the directories
 
     :param  dirs:   Directories
@@ -189,72 +187,72 @@ def __generate_cell_analysis_results(dirs):
     :return:        Objects that hold information for all the cell result directories
     :rtype          list
     """
-    results = []
+    analyses = []
     for d in dirs:
         logger.info("Retrieving cell analysis data from: {}".format(d))
-        results.append(CellAnalysis(d))
+        analyses.append(CellAnalysis(d))
 
-    return results
+    return analyses
 
 
-def __generate_rows_for_files_worksheet(cell_analysis_results, num_threads=0):
+def __generate_rows_for_files_worksheet(cell_analyses, num_threads=0):
     """Generates all the rows for the worksheet that contains information on all the files.
 
-    :param  cell_analysis_results:  List of all cell analysis result info
-    :type   cell_analysis_results:  list
-    :return:                        List of rows to insert into an excel worksheet
-    :rtype                          list
+    :param  cell_analyses:  List of all cell analysis result info
+    :type   cell_analyses:  list
+    :return:                List of rows to insert into an excel worksheet
+    :rtype                  list
     """
     logger.info('Generating row data for files worksheet...')
 
     if num_threads > 1:
-        return __do_generate_rows_for_files_worksheet_async(cell_analysis_results, num_threads)
+        return __do_generate_rows_for_files_worksheet_async(cell_analyses, num_threads)
     else:
-        return __do_generate_rows_for_files_worksheet(cell_analysis_results)
+        return __do_generate_rows_for_files_worksheet(cell_analyses)
 
 
-def __do_generate_rows_for_files_worksheet(cell_analysis_results):
+def __do_generate_rows_for_files_worksheet(cell_analyses):
     """Generates all the rows for the worksheet that contains information on all the files.
 
-    :param  cell_analysis_results:  List of all cell analysis result info
-    :type   cell_analysis_results:  list
-    :return:                        List of rows to insert into an excel worksheet
-    :rtype                          list
+    :param  cell_analyses:  List of all cell analysis result info
+    :type   cell_analyses:  list
+    :return:                List of rows to insert into an excel worksheet
+    :rtype                  list
     """
-    total_cell_analysis_results = len(cell_analysis_results)
+    total_cell_analyses = len(cell_analyses)
     analysis_count = 0
     rows = []
 
-    for analysis in cell_analysis_results:
+    for analysis in cell_analyses:
         analysis_count += 1
         files_info = analysis.get_info_for_files()
 
-        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analysis_results))
+        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analyses))
 
     return rows
 
 
-def __do_generate_rows_for_files_worksheet_async(cell_analysis_results, max_threads=0):
+def __do_generate_rows_for_files_worksheet_async(cell_analyses, max_threads=0):
     """Generates all the rows for the worksheet that contains information on all the files.
 
-    :param  cell_analysis_results:  List of all cell analysis result info
-    :type   cell_analysis_results:  list
-    :return:                        List of rows to insert into an excel worksheet
-    :rtype                          list
+    :param  cell_analyses:  List of all cell analysis result info
+    :type   cell_analyses:  list
+    :return:                List of rows to insert into an excel worksheet
+    :rtype                  list
     """
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
         logger.debug("Submitting job to get file info to Thread Pool...")
 
         futures = {}
-        job_total = len(cell_analysis_results)
+        job_total = len(cell_analyses)
         i = 0
 
-        for analysis in cell_analysis_results:
+        for analysis in cell_analyses:
             i += 1
             logger.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
             futures[executor.submit(analysis.get_info_for_files)] = analysis
 
-    total_cell_analysis_results = len(cell_analysis_results)
+    total_cell_analyses = len(cell_analyses)
     analysis_count = 0
     rows = []
 
@@ -263,7 +261,7 @@ def __do_generate_rows_for_files_worksheet_async(cell_analysis_results, max_thre
         analysis = futures[future]
         files_info = future.result()
 
-        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analysis_results))
+        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analyses))
 
     return rows
 
@@ -283,23 +281,23 @@ def __generate_rows(analysis, files_info, file_count, total_file_count):
     return rows
 
 
-def __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analysis_results):
+def __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analyses):
     """Generates all the rows for the worksheet that contains sr data.
 
 
-    :param  bioproject_id:          BioProject ID
-    :rtype  bioporject_id:          string
-    :param  biosample_id:           BioSample ID
-    :rtype  biosample_id:           string
-    :param  cell_analysis_results:  All cell analysis result info
-    :type   cell_analysis_results:  list
-    :return:                        Rows to insert into an excel worksheet
-    :rtype                          list
+    :param  bioproject_id:  BioProject ID
+    :rtype  bioporject_id:  string
+    :param  biosample_id:   BioSample ID
+    :rtype  biosample_id:   string
+    :param  cell_analyses:  All cell analysis result info
+    :type   cell_analyses:  list
+    :return:                Rows to insert into an excel worksheet
+    :rtype                  list
     """
     logger.info('Generating row data for sr data worksheet...')
     rows = []
     unique_sample_names = set()
-    for r in cell_analysis_results:
+    for r in cell_analyses:
         sample_name = r.get_value_from_xml_path('Sample/Name')
         design_desc = r.get_value_from_xml_path('Primary/ConfigFileName').rstrip('.xml')
         if sample_name not in unique_sample_names:
@@ -360,12 +358,12 @@ def __do_upload(input_fofn_file, username, ssh_key_file):
     if not SraSubmission(username, ssh_key_file).ascp_cmd_exist():
         raise Exception("Could not find Aspera's ascp command!")
 
-    cell_analysis_results = __generate_cell_analysis_results_from_fofn(input_fofn_file)
+    cell_analyses = __generate_cell_analyses_from_fofn(input_fofn_file)
 
     # Get all files to upload
     files_only = []
-    for result in cell_analysis_results:
-        files_only.extend(result.get_files())
+    for analysis in cell_analyses:
+        files_only.extend(analysis.get_files())
 
     logger.info("Submitting files to NCBI...")
 

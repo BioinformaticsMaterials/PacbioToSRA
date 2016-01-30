@@ -1,6 +1,6 @@
 import unittest
 
-from PacbioToSRA.cell_analysis_result import *
+from PacbioToSRA.cell_analysis import *
 from tests import *
 
 
@@ -21,25 +21,25 @@ class TestCellAnalysis(unittest.TestCase):
     def test_get_instrument_model_for_h5_files(self):
         self.assertEqual(
             CellAnalysis.RS2,
-            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_instrument_model()
+            CellAnalysis(CELL_ANALYSIS_WITH_H5_FILES_TEST_DATA_PATH).get_instrument_model()
         )
 
     def test_get_instrument_model_for_bam_files(self):
         self.assertEqual(
             CellAnalysis.SEQUEL,
-            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_instrument_model()
+            CellAnalysis(CELL_ANALYSIS_WITH_BAM_FILES_TEST_DATA_PATH).get_instrument_model()
         )
 
     def test_get_file_type_for_h5_files(self):
         self.assertEqual(
             CellAnalysis.HDF5_FILE_TYPE,
-            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH).get_file_type()
+            CellAnalysis(CELL_ANALYSIS_WITH_H5_FILES_TEST_DATA_PATH).get_file_type()
         )
 
     def test_get_file_type_for_bam_files(self):
         self.assertEqual(
             CellAnalysis.BAM_FILE_TYPE,
-            CellAnalysis(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH).get_file_type()
+            CellAnalysis(CELL_ANALYSIS_WITH_BAM_FILES_TEST_DATA_PATH).get_file_type()
         )
 
     def test_get_value_from_xml_path_from_h5_files(self):
@@ -71,7 +71,7 @@ class TestCellAnalysis(unittest.TestCase):
 
         ]
 
-        c = CellAnalysis(CELL_ANALYSIS_RESULT_WITH_H5_FILES_TEST_DATA_PATH)
+        c = CellAnalysis(CELL_ANALYSIS_WITH_H5_FILES_TEST_DATA_PATH)
 
         for test in test_cases:
             self.assertEqual(test['expected_value'], c.get_value_from_xml_path(test['input']))
@@ -105,7 +105,7 @@ class TestCellAnalysis(unittest.TestCase):
 
         ]
 
-        c = CellAnalysis(CELL_ANALYSIS_RESULT_WITH_BAM_FILES_TEST_DATA_PATH)
+        c = CellAnalysis(CELL_ANALYSIS_WITH_BAM_FILES_TEST_DATA_PATH)
 
         for test in test_cases:
             self.assertEqual(test['expected_value'], c.get_value_from_xml_path(test['input']))
