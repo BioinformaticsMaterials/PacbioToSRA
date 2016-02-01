@@ -28,18 +28,31 @@ $ pip install -r requirements.txt
 ##Step 3. Run the script
 ####Usage:
 ```
-$ bin/send_to_ncbi.py --bioproject_accession=BIOPROJECT_ACCESSION --biosample_accession=BIOSAMPLE_ACCESSION --input_fofn=INPUT_FOFN_FILE --ncbi_username=NCBI_USERNAME --ncbi_ssh_key_file=SSH_KEY_FILE [--excel_output_file=EXCEL_OUTPUT_FILE]
+$ bin/pacb_ncbi --help
+Usage: pacb_ncbi [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  calc_upload_size              Calculates the total size of the data that...
+  create_excel_file             Creates the Excel file that contains the...
+  create_excel_file_and_upload  Creates the Excel file that contains the...
+  upload                        Uploads the datasets in the input.fofn file...
 ```
-*  NCBI_USERNAME is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
-*  SSH _KEY _FILE is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
-*  For additional help on the script, type:  
-```$ bin/send_to_ncbi.py --help```
-
-
 ####Example:
 ```
-$ bin/send_to_ncbi.py --bioproject_accession=project1 --biosample_accession=sample1 --input_fofn=/path/to/input.fofn --ncbi_username=myusername --ncbi_ssh_key_file=/path/to/ssh/file --excel_output_file=my_sra_submission.xlsx
+$ bin/pacb_ncbi create_excel_file_and_upload -i /path/to/input.fofn -p bioproject1 -s biosample1 -x my_sra.xlsx -u ncbi_username -k /path/to/ssh/file
 ```
+####Notes:
+*  NCBI_USERNAME is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
+*  SSH _KEY _FILE is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
+* To get additional help, type:  
+	```$ bin/pacb_ncbi <subcommand> --help```  
+	ex:  
+	```$ bin/pacb_ncbi create_excel_file_and_upload --help```  
+	```$ bin/pacb_ncbi create_excel_file --help```  
+	```$ bin/pacb_ncbi upload --help```  
 
 ##Step 4. Update spreadsheet and email it to NCBI
 *  Update the spreadsheet with any additional information.
