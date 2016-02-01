@@ -7,7 +7,6 @@ sys.path.insert(1, APP_ROOT_FULLPATH)
 
 import concurrent
 import click
-import errno
 import logging
 import os
 
