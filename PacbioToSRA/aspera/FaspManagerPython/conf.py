@@ -74,7 +74,7 @@ def reReadConfig():
       cfg = readConfig(p)
       global foundConf
       if not foundConf:
-        print "Using config from:", p
+        # print "Using config from:", p
         foundConf = True
       if cfg:
         configFile = p
