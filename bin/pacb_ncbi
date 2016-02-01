@@ -122,6 +122,17 @@ def create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, e
     )
 
 
+@cli.command(help='Calculates the total size of the data that will be uploaded.')
+@click.option('-i', '--input_fofn_file', 'input_fofn_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
+              help='The input.fofn file. This file contains the dataset directories.')
+def calc_upload_size(input_fofn_file):
+    __func_error_wrapper(
+        __do_calc_upload_size,
+        input_fofn_file
+    )
+
+
 ###########################################
 # Functions to create the excel file
 ###########################################
@@ -373,6 +384,22 @@ def __do_upload(input_fofn_file, username, ssh_key_file):
     except:
         logger.error('Upload failure!')
         raise
+
+
+def __do_calc_upload_size(input_fofn_file):
+    cell_analyses = __generate_cell_analyses_from_fofn(input_fofn_file)
+
+    total_size = 0
+    total_files = 0
+    for analysis in cell_analyses:
+        for f in analysis.get_files():
+            size = os.path.getsize(f)
+            logger.info("{}: {}".format(f, size))
+            total_size += size
+            total_files += 1
+
+    logger.info("Total number of files: {}".format(total_files))
+    logger.info("Total size: {} ({} MB)".format(total_size, round(total_size/(1024*1024.0), 2)))
 
 
 ###########################################
