@@ -29,6 +29,17 @@ logger = logging.getLogger(__name__)
 EXCEL_OUTPUT_FILE_FORMAT = 'sra_submission_{}.xlsx'
 MIN_THREADS = 2
 MAX_THREADS = 100
+HELP_MSG_FOR_INPUT_FOFN = 'The input.fofn file. This file contains the dataset directories.'
+HELP_MSG_FOR_BIOPROJECT_ID = 'NCBI BioProject ID created on the NCBI website.'
+HELP_MSG_FOR_BIOSAMPLE_ID = 'NCBI BioSample ID created on the NCBI website.'
+HELP_MSG_FOR_OUTPUT_EXCEL_FILE = "Name of the output file. Output format is .xslx. Default file name: {}".format(
+                                 EXCEL_OUTPUT_FILE_FORMAT.format('<date>'))
+HELP_MSG_FOR_MULTIPROCESS = 'Enable multiprocess. Will create excel document and upload files in parallel. ' \
+                            'This will speed up the entire process but will require more system resources.'
+HELP_MSG_FOR_THREADS = "Number of threads to use. This decreases total process time but requires more " \
+                       "system resources. Range must be between {} and {}".format(MIN_THREADS, MAX_THREADS)
+HELP_MSG_FOR_USERNAME = 'Username to use to upload data sets to NCBI.'
+HELP_MSG_FOR_SSH_KEY = 'SSH key to use to upload data sets to NCBI.'
 
 
 ############################################
@@ -42,23 +53,15 @@ def cli():
 
 @cli.command(help='Creates the Excel file that contains the dataset info required by NCBI.')
 @click.option('-i', '--input_fofn_file', 'input_fofn_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='The input.fofn file. This file contains the dataset directories.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
 @click.option('-p', '--bioproject_id', 'bioproject_id',
-              required=True, type=click.STRING,
-              help='NCBI BioProject ID created on the NCBI website.')
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOPROJECT_ID)
 @click.option('-s', '--biosample_id', 'biosample_id',
-              required=True, type=click.STRING,
-              help='NCBI BioSample ID created on the NCBI website.')
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOSAMPLE_ID)
 @click.option('-x', '--excel_output_file', 'excel_output_file',
-              required=False, type=click.Path(file_okay=True, resolve_path=True),
-              help="Name of the output file. Output format is .xslx. Default file name: {}".format(
-                      EXCEL_OUTPUT_FILE_FORMAT.format('<date>')
-              ))
+              required=False, type=click.Path(file_okay=True, resolve_path=True), help=HELP_MSG_FOR_OUTPUT_EXCEL_FILE)
 @click.option('-t', '--num_threads', 'num_threads',
-              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS),
-              help='Number of threads to use. This decreases total process time but requires more system resources.' +
-              "Range must be between {} and {}".format(MIN_THREADS, MAX_THREADS))
+              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS), help=HELP_MSG_FOR_THREADS)
 def create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads):
     __func_error_wrapper(
         __do_create_excel_file,
@@ -68,14 +71,11 @@ def create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output
 
 @cli.command(help='Uploads the datasets in the input.fofn file to NCBI.')
 @click.option('-i', '--input_fofn_file', 'input_fofn_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='The input.fofn file. This file contains the dataset directories.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
 @click.option('-u', '--username', 'username',
-              required=True, type=click.STRING,
-              help='Username to use to upload data sets to NCBI.')
+              required=True, type=click.STRING, help=HELP_MSG_FOR_USERNAME)
 @click.option('-k', '--ssh_key_file', 'ssh_key_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='SSH key  to use to upload data sets to NCBI.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_SSH_KEY)
 def upload(input_fofn_file, username, ssh_key_file):
     __func_error_wrapper(
         __do_upload,
@@ -85,34 +85,23 @@ def upload(input_fofn_file, username, ssh_key_file):
 
 @cli.command(help='Creates the Excel file that contains the dataset info required by NCBI and uplaods them to NCBI.')
 @click.option('-i', '--input_fofn_file', 'input_fofn_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='The input.fofn file. This file contains the dataset directories.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
 @click.option('-p', '--bioproject_id', 'bioproject_id',
-              required=True, type=click.STRING,
-              help='NCBI BioProject ID created on the NCBI website.')
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOPROJECT_ID)
 @click.option('-s', '--biosample_id', 'biosample_id',
-              required=True, type=click.STRING,
-              help='NCBI BioSample ID created on the NCBI website.')
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOSAMPLE_ID)
 @click.option('-x', '--excel_output_file', 'excel_output_file',
-              required=False, type=click.Path(file_okay=True, resolve_path=True),
-              help='Name of the output file. Output format is .xslx. Default file name: sra_submission_<date>.xlsx')
+              required=False, type=click.Path(file_okay=True, resolve_path=True), help=HELP_MSG_FOR_OUTPUT_EXCEL_FILE)
 @click.option('-i', '--input_fofn_file', 'input_fofn_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='The input.fofn file. This file contains the dataset directories.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
 @click.option('-u', '--username', 'username',
-              required=True, type=click.STRING,
-              help='Username to use to upload data sets to NCBI.')
+              required=True, type=click.STRING, help=HELP_MSG_FOR_USERNAME)
 @click.option('-k', '--ssh_key_file', 'ssh_key_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='SSH key to use to upload data sets to NCBI.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_SSH_KEY)
 @click.option('-m', '--enable_multiprocess', 'enable_multiprocess',
-              is_flag=True,
-              help='Enable multiprocess. Will create excel document and upload files in parallel. ' +
-                   'This will speed up the entire process but will require more system resources.')
+              is_flag=True, help=HELP_MSG_FOR_MULTIPROCESS)
 @click.option('-t', '--num_threads', 'num_threads',
-              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS),
-              help='Number of threads to use. This decreases total process time but requires more system resources.' +
-              "Range must be between {} and {}".format(MIN_THREADS, MAX_THREADS))
+              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS), help=HELP_MSG_FOR_THREADS)
 def create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, excel_output_file,
                                  username, ssh_key_file, enable_multiprocess, num_threads):
     __func_error_wrapper(
@@ -124,8 +113,7 @@ def create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, e
 
 @cli.command(help='Calculates the total size of the data that will be uploaded.')
 @click.option('-i', '--input_fofn_file', 'input_fofn_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True),
-              help='The input.fofn file. This file contains the dataset directories.')
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
 def calc_upload_size(input_fofn_file):
     __func_error_wrapper(
         __do_calc_upload_size,
