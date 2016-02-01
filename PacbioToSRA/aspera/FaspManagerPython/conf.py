@@ -105,7 +105,7 @@ if not cfg:
 
   if not ascp_path:
     for path in WIN_ASCP_PATH:
-      print "%s/%s" % (path, ASCP) 
+      # print "%s/%s" % (path, ASCP)
       if os.path.isfile( "%s/%s.exe" % (path, ASCP) ): 
         ascp_path = "%s/%s.exe" % (path, ASCP)
         break
