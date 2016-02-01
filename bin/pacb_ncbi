@@ -92,8 +92,6 @@ def upload(input_fofn_file, username, ssh_key_file):
               required=True, type=click.STRING, help=HELP_MSG_FOR_BIOSAMPLE_ID)
 @click.option('-x', '--excel_output_file', 'excel_output_file',
               required=False, type=click.Path(file_okay=True, resolve_path=True), help=HELP_MSG_FOR_OUTPUT_EXCEL_FILE)
-@click.option('-i', '--input_fofn_file', 'input_fofn_file',
-              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
 @click.option('-u', '--username', 'username',
               required=True, type=click.STRING, help=HELP_MSG_FOR_USERNAME)
 @click.option('-k', '--ssh_key_file', 'ssh_key_file',
