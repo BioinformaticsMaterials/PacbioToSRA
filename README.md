@@ -55,6 +55,12 @@ $ bin/pacb_ncbi create_excel_file_and_upload -i /path/to/input.fofn -p bioprojec
 	```$ bin/pacb_ncbi upload --help```  
 
 ##Step 4. Update spreadsheet and email it to NCBI
-*  Update the spreadsheet with any additional information.
+*  Update the spreadsheet with any additional information. The following columns must be filled in:
+    * "SRA_data" sheet
+        * title/short description
+        * library_strategy
+        * library_source
+        * library_selection
+        * library_layout
 *  Email (info@ncbi.nlm.nih.gov) and attach the spreadsheet to the email. 
 
