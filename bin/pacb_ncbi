@@ -270,18 +270,28 @@ def __do_generate_rows_for_files_worksheet_async(cell_analyses, max_threads=0):
 
 
 def __generate_rows(analysis, files_info, file_count, total_file_count):
+    """
+    Header format:
+    Library_ID | Run_ID | Filename | md5sum
+    """
     logger.info("    ({}/{}) Generating specific information for all files ({}) in: {}".format(
         file_count, total_file_count, len(files_info), analysis.root_dir
     ))
 
-    sample_name = analysis.get_value_from_xml_path('Sample/Name')
-    sample_plateid = analysis.get_value_from_xml_path('Sample/PlateId')
+    library_id = analysis.get_value_from_xml_path('Sample/Name')
+    run_id = __generate_run_id_from_filename(analysis.get_metadata_xml_file())
 
     rows = []
     for f, info in files_info.iteritems():
-        rows.append([sample_name, sample_plateid, info['filename'], info['md5sum']])
+        rows.append([library_id, run_id, info['filename'], info['md5sum']])
 
     return rows
+
+
+def __generate_run_id_from_filename(filename):
+    f = os.path.basename(filename)
+    parts = f.split('.')
+    return parts[0]
 
 
 def __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analyses):
