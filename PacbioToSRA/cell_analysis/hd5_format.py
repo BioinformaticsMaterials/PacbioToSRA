@@ -6,6 +6,7 @@ from PacbioToSRA.cell_analysis.abstract_format import AbstractFormat, PACB_SMART
 logger = logging.getLogger(__name__)
 
 
+# constants
 RS2 = 'PacBio RS II'
 
 
@@ -20,10 +21,6 @@ class HD5Format(AbstractFormat):
 
     @property
     def analysis_metadata_file(self):
-        """Gets absolute path for files ending with *.metadata.h5
-
-        :return string  Return only one file
-        """
         return self._find_analysis_metadata_file(".*\.metadata\.xml$")
 
 

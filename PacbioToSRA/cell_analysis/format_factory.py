@@ -4,11 +4,11 @@ import logging
 from PacbioToSRA.cell_analysis.bam_format import BamFormat
 from PacbioToSRA.cell_analysis.hd5_format import HD5Format
 
+
 logger = logging.getLogger(__name__)
 
 
 class FormatFactory(object):
-
     @staticmethod
     def newCellAnalysis(dir):
         clazzes = set([HD5Format, BamFormat])
