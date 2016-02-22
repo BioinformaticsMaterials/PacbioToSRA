@@ -20,6 +20,10 @@ class AbstractFormat:
     __metaclass__ = ABCMeta
 
     def __init__(self, absolute_path):
+        """
+        :param  absolute_path:          Path to cell analysis files
+        :rtype  absolute_path:          string
+        """
         # check if directory exists
         if not isdir(absolute_path):
             raise OSError("Directory does not exist: {}".format(absolute_path))
@@ -93,9 +97,15 @@ class AbstractFormat:
         :return     files
         :rtype      set
         """
-        if not self.__files:
-            for root, _, filenames in os.walk(self.root_dir):
-                self.__files.update([os.path.join(root, f) for f in filenames])
+        if self.__files:
+            return self.__files
+
+        for root, _, filenames in os.walk(self.root_dir):
+            for f in filenames:
+                for ext in self.required_file_extensions:
+                    if f.endswith(ext):
+                        self.__files.add(f)
+                        break
 
         return self.__files
 
