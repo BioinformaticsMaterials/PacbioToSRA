@@ -1,6 +1,6 @@
 import logging
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 from os.path import basename
 
 
@@ -9,6 +9,18 @@ logger = logging.getLogger(__name__)
 
 class AbstractCellAnalysisTranslator:
     __metaclass__ = ABCMeta
+
+    @property
+    @abstractproperty
+    def cell_analysis_format_class(self):
+        """Returns the cell analysis format class that this translator class will be used for.
+
+        :param  cell_analysis:  Cell analysis such as cell_analysis.bam_format
+        :rtype  cell_analysis:  Child of cell_analysis.abstract_format.AbstractFormat
+        :return:                Cell analysis format class (ex: BamFormat)
+        :rtype                  class
+        """
+        raise Exception("Missing implementation of abstract property.")
 
     @staticmethod
     @abstractmethod

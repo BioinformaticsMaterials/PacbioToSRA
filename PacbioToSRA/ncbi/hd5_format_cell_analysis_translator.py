@@ -1,5 +1,6 @@
 import logging
 
+from PacbioToSRA.cell_analysis.hd5_format import HD5Format
 from PacbioToSRA.ncbi.abstract_cell_analysis_translator import AbstractCellAnalysisTranslator
 
 
@@ -7,6 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class HD5FormatCellAnalysisTranslator(AbstractCellAnalysisTranslator):
+    @property
+    def cell_analysis_format_class(self):
+        return HD5Format
+
     @staticmethod
     def translate_sample_name(cell_analysis):
         return cell_analysis.get_value_from_analysis_metadata_file(
