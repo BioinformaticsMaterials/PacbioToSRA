@@ -32,7 +32,8 @@ class AbstractFormat:
         self.__file_info_map = {}
         self.__analysis_metadata_file = self.analysis_metadata_file
         self.__analysis_metadata_contents = None
-        self.__required_file_extensions = set()
+        self.__required_file_extensions = self.required_file_extensions
+        self.__file_type = None
 
         if not self._required_files_exist(self.files, self.required_file_extensions):
             raise Exception("Missing required files. Require: {}".format(list(self.required_file_extensions)))
@@ -72,6 +73,16 @@ class AbstractFormat:
 
         :return     File extensions
         :rtype      set
+        """
+        raise Exception("Missing implementation of abstract property.")
+
+    @property
+    @abstractproperty
+    def file_type(self):
+        """The type the files are in.
+
+        :return     type
+        :rtype      string
         """
         raise Exception("Missing implementation of abstract property.")
 
