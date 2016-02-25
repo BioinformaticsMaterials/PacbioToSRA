@@ -1,7 +1,6 @@
 import concurrent.futures
 import logging
 import os
-import re
 
 from PacbioToSRA import hash_utils
 from abc import ABCMeta, abstractproperty
