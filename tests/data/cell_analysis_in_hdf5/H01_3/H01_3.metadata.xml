@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Metadata xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://pacificbiosciences.com/PAP/Metadata.xsd">
+  <Run>
+    <RunId>H01_3_Run_RunID</RunId>
+    <Name>H01_3_Run_Name</Name>
+  </Run>
+  <Sample>
+    <Name>H01_3_Sample_Name</Name>
+    <PlateId>H01_3_Sample_PlateId</PlateId>
+  </Sample>
+  <TemplatePrep>
+    <Name>H01_3_TemplatePrep_Name</Name>
+  </TemplatePrep>
+  <BindingKit>
+    <Name>H01_3_BindingKit_Name</Name>
+  </BindingKit>
+  <Primary>
+    <ConfigFileName>H01_3_Primary_ConfigFileName.xml</ConfigFileName>
+  </Primary>
+</Metadata>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pbds:SubreadSet UniqueId="11111111-1111-1111-1111-111111111111" MetaType="PacBio.DataSet.SubreadSet" TimeStampedName="SubreadSetCollection_160209_061941410" Name="Run_201602090050_PCT_Pool_NORM" Tags="subreadset" Version="3.0.0" xmlns="http://pacificbiosciences.com/PacBioBaseDataModel.xsd" xmlns:pbdm="http://pacificbiosciences.com/PacBioDataModel.xsd" xmlns:pbds="http://pacificbiosciences.com/PacBioDatasets.xsd" xmlns:pbmeta="http://pacificbiosciences.com/PacBioCollectionMetadata.xsd" xmlns:pbsample="http://pacificbiosciences.com/PacBioSampleInfo.xsd" xmlns:pbrk="http://pacificbiosciences.com/PacBioReagentKit.xsd" xmlns:pbpn="http://pacificbiosciences.com/PacBioPartNumbers.xsd" xmlns:pbbase="http://pacificbiosciences.com/PacBioBaseDataModel.xsd">
+<pbds:DataSetMetadata>
+<pbmeta:Collections>
+<pbmeta:CollectionMetadata Context="m11111_160209_005630" Status="Ready" InstrumentId="11111" InstrumentName="Inst11111" UniqueId="11111111-1111-1111-1111-111111111111" MetaType="CollectionMetadata" TimeStampedName="11111-CollectionMetadata-2016-53-09T00:53:07.913Z" CreatedAt="0001-01-01T00:00:00" ModifiedAt="0001-01-01T00:00:00">
+	<pbmeta:WellSample Name="CollectionMetadata_WellSample_Name_11111" CreatedAt="0001-01-01T00:00:00" ModifiedAt="0001-01-01T00:00:00">
+		<pbmeta:WellName>CollectionMetadata_WellSample_WellName_11111</pbmeta:WellName>
+	</pbmeta:WellSample>
+	<pbmeta:Primary>
+		<pbmeta:ConfigFileName>CollectionMetadata_Primary_ConfigFileName_11111.xml</pbmeta:ConfigFileName>
+	</pbmeta:Primary>
+</pbmeta:CollectionMetadata>
+</pbmeta:Collections>
+</pbds:DataSetMetadata>
+</pbds:SubreadSet>
