@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from PacbioToSRA.cell_analysis.abstract_format import AbstractFormat, InvalidDirectoryException
@@ -38,7 +39,7 @@ class TestAbstractFormat(unittest.TestCase):
 
     def test__init__directory_is_not_valid(self):
         with self.assertRaises(InvalidDirectoryException):
-            ChildOfAbstractFormat('.')
+            ChildOfAbstractFormat(os.path.dirname(os.path.realpath(__file__)))
 
     def test_extract_file_extension(self):
         test_cases = [
