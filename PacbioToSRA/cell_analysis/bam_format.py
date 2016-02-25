@@ -1,6 +1,6 @@
 import logging
 
-from PacbioToSRA.cell_analysis.abstract_format import AbstractFormat, PACB_SMART_ANALYSIS
+from PacbioToSRA.cell_analysis.abstract_format import AbstractFormat
 
 
 logger = logging.getLogger(__name__)
@@ -18,15 +18,15 @@ class BamFormat(AbstractFormat):
 
     @property
     def required_file_extensions(self):
-        return set(['.subreadset.xml', '.subreads.bam'])
+        return set(['subreadset.xml', 'subreads.bam'])
 
     @property
     def file_type(self):
         return BAM_FILE_TYPE
 
     @property
-    def analysis_metadata_file(self):
-        return self._find_analysis_metadata_file('.*\.subreadset\.xml$')
+    def analysis_metadata_file_extension(self):
+        return 'subreadset.xml'
 
 
 if __name__ == '__main__':

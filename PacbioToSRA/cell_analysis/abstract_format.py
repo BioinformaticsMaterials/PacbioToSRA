@@ -24,6 +24,8 @@ class AbstractFormat:
         :param  absolute_path:          Path to cell analysis files
         :rtype  absolute_path:          string
         """
+        logger.debug("Creating cell analysis instance for {}: {}".format(self.__class__.__name__, absolute_path))
+
         # check if directory exists
         if not isdir(absolute_path):
             raise OSError("Directory does not exist: {}".format(absolute_path))
@@ -31,17 +33,64 @@ class AbstractFormat:
         # defaults
         self.__root_dir = absolute_path
         self.__software_platform = self.software_platform
-        self.__instrument_model = self.instrument_model
         self.__files = set()
         self.__file_info_map = {}
-        self.__analysis_metadata_file = self.analysis_metadata_file
+        self.__analysis_metadata_file = None
         self.__analysis_metadata_contents = None
+
+        # abstract properties
+        self.__instrument_model = self.instrument_model
         self.__required_file_extensions = self.required_file_extensions
-        self.__file_type = None
+        self.__file_type = self.file_type
+        self.__analysis_metadata_file_extension = self.analysis_metadata_file_extension
 
-        if not self._required_files_exist(self.files, self.required_file_extensions):
-            raise Exception("Missing required files. Require: {}".format(list(self.required_file_extensions)))
+        if not self.is_dir_valid():
+            raise InvalidDirectoryException("Directory is not valid.")
 
+        logger.debug('Instance created.')
+
+    ######################
+    # Abstract Properties
+    ######################
+    @property
+    @abstractproperty
+    def instrument_model(self):
+        """The instrument model that the analysis was ran on. Ex: Sequel
+
+        :return     Instrument model
+        :rtype      string
+        """
+        raise Exception("Missing implementation of abstract property.")
+
+    @property
+    @abstractproperty
+    def required_file_extensions(self):
+        """There must be a file associated with all these following extensions.
+
+        :return     File extensions
+        :rtype      set
+        """
+        raise Exception("Missing implementation of abstract property.")
+
+    @property
+    @abstractproperty
+    def file_type(self):
+        """The type the files are in.
+
+        :return     type
+        :rtype      string
+        """
+        raise Exception("Missing implementation of abstract property.")
+
+    @property
+    @abstractproperty
+    def analysis_metadata_file_extension(self):
+        """File extension that contains provides info on the cell analysis."""
+        raise Exception("Missing implementation of abstract property.")
+
+    ######################
+    # Properties
+    ######################
     @property
     def root_dir(self):
         """Absolute path containing the analysis.
@@ -61,36 +110,6 @@ class AbstractFormat:
         return PACB_SMART_ANALYSIS
 
     @property
-    @abstractproperty
-    def instrument_model(self):
-        """The instrument model that the analysis was ran on. Ex: Sequel
-
-        :return     Instrument model
-        :rtype      string
-        """
-        raise Exception("Missing implementation of abstract property.")
-
-    @property
-    @abstractproperty
-    def required_file_extensions(self):
-        """There must be a file with all these following extensions.
-
-        :return     File extensions
-        :rtype      set
-        """
-        raise Exception("Missing implementation of abstract property.")
-
-    @property
-    @abstractproperty
-    def file_type(self):
-        """The type the files are in.
-
-        :return     type
-        :rtype      string
-        """
-        raise Exception("Missing implementation of abstract property.")
-
-    @property
     def files(self):
         """Files in the cell analysis.
 
@@ -102,10 +121,10 @@ class AbstractFormat:
 
         for root, _, filenames in os.walk(self.root_dir):
             for f in filenames:
-                for ext in self.required_file_extensions:
-                    if f.endswith(ext):
-                        self.__files.add(f)
-                        break
+                ext = self.extract_file_extension(f)
+
+                if ext in self.required_file_extensions:
+                    self.__files.add(os.path.join(root, f))
 
         return self.__files
 
@@ -121,6 +140,32 @@ class AbstractFormat:
             self.__file_info_map = self.__generate_file_info_map(self.files)
 
         return self.__file_info_map
+
+    @property
+    def analysis_metadata_file(self):
+        """Metadata file that provides info on the cell analysis."""
+        if self.__analysis_metadata_file:
+            return self.__analysis_metadata_file
+
+        found = []
+        for f in self.files:
+            if self.analysis_metadata_file_extension == self.extract_file_extension(f):
+                found.append(f)
+
+        if len(found) > 1:
+            # found more than one file which isn't expect
+            raise Exception('Found more than one file matching "{}". Files: {}'.format(
+                self.analysis_metadata_file_extension, found
+            ))
+        elif len(found) < 1:
+            # found no file which isn't expect
+            raise Exception('Found no files matching "{}"'.format(self.analysis_metadata_file_extension))
+
+        return found[0]
+
+    ######################
+    # Methods
+    ######################
 
     @classmethod
     def __generate_file_info_map(cls, files):
@@ -177,35 +222,6 @@ class AbstractFormat:
 
         return f_map
 
-    @property
-    @abstractproperty
-    def analysis_metadata_file(self):
-        """Metadata file that provides info on the cell analysis."""
-        raise Exception("Missing implementation of abstract property.")
-
-    def _find_analysis_metadata_file(self, regex):
-        """Finds cell analysis metadata file that provides information about the analysis.
-
-        :param  regex:  Regular expresssion to search fo the file. Ex: ".*\.metadata\.xml$"
-        :type   regex:  string
-        :return:        Full path to file.
-        :rtype          string
-        """
-        found = []
-        pattern = re.compile(regex)
-        for f in self.files:
-            if pattern.match(f):
-                found.append(f)
-
-        if len(found) > 1:
-            # found more than one file which isn't expect
-            raise Exception('Found more than one file matching "{}". Files: {}'.format(regex, found))
-        elif len(found) < 1:
-            # found no file which isn't expect
-            raise Exception('Found no files matching "{}"'.format(regex))
-
-        return found[0]
-
     def get_value_from_analysis_metadata_file(self, path, attribute=None):
         """Extracts data from the xml file.
 
@@ -256,4 +272,35 @@ class AbstractFormat:
                 return False
 
         return True
+
+    def is_dir_valid(self):
+        logger.debug("Checking directory is valid: {}".format(self.root_dir))
+
+        extensions_exist = dict.fromkeys(self.required_file_extensions, False)
+
+        for f in self.files:
+            ext = self.extract_file_extension(f)
+
+            if ext not in self.required_file_extensions:
+                continue
+
+            extensions_exist[ext] = True
+
+        logger.debug("Check directory results: {}".format(extensions_exist))
+        return all(extensions_exist.itervalues())
+
+    @staticmethod
+    def extract_file_extension(f):
+        """ Extracts everything after the first "." (ex: input.metatdata.xml => metadata.xml)
+
+        :param  f:  File name
+        :type   f:  string
+        :return:    File extension
+        :rtype      string
+        """
+        return f.split('.', 1)[1]
+
+
+class InvalidDirectoryException(Exception):
+    pass
 
