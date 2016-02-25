@@ -259,6 +259,10 @@ def __do_generate_rows_for_files_worksheet_async(cell_analyses, max_threads=0):
     :return:                List of rows to insert into an excel worksheet
     :rtype                  list
     """
+    # "file_info_map" is a property but it takes a while since it generates all the files md5sums.
+    #   In order to use this property asynchronously, need to wrap it in a function.
+    async_wrapper = lambda x: x.file_info_map
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
         logger.debug("Submitting job to get file info to Thread Pool...")
 
@@ -269,9 +273,7 @@ def __do_generate_rows_for_files_worksheet_async(cell_analyses, max_threads=0):
         for analysis in cell_analyses:
             i += 1
             logger.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
-            # futures[executor.submit(analysis.file_info_map)] = analysis
-            f = lambda x: x.file_info_map
-            futures[executor.submit(f, analysis)] = analysis
+            futures[executor.submit(async_wrapper, analysis)] = analysis
 
     total_cell_analyses = len(cell_analyses)
     analysis_count = 0
