@@ -1,5 +1,4 @@
 import logging
-import os
 
 from PacbioToSRA.cell_analysis.abstract_format import AbstractFormat
 
