@@ -3,14 +3,6 @@ from tests import *
 
 
 class TestAbstractFormat(unittest.TestCase):
-    """To run these tests:
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.test_abstract_format
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.test_abstract_formatTest.AbstractFormat
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.test_abstract_formatTest.AbstractFormat.test__init__directory_does_not_exist
-
-    To run all test:
-    $ python -m unittest discover -v
-    """
 
     def test_generate_run_id_from_filename(self):
         test_cases = [

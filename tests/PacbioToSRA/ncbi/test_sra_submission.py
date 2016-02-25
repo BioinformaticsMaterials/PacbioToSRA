@@ -3,14 +3,6 @@ from tests import *
 
 
 class TestSraSubmission(unittest.TestCase):
-    """To run these tests:
-    $ python -m unittest -v tests.PacbioToSRA.ncbi.test_sra_submission
-    $ python -m unittest -v tests.PacbioToSRA.ncbi.test_sra_submission.TestSraSubmission
-    $ python -m unittest -v tests.PacbioToSRA.ncbi.test_sra_submission.TestSraSubmission.test_ssh_key_does_not_exist
-
-    To run all test:
-    $ python -m unittest discover -v
-    """
 
     def test_ssh_key_does_not_exist(self):
         with self.assertRaises(Exception):

@@ -5,6 +5,7 @@ from tests.PacbioToSRA.ncbi.base_test_for_cell_analysis_translator import BaseTe
 
 
 class TestCellAnalysisBamFormatTranslator(BaseTestForCellAnalysisTranslator):
+
     cell_analysis = HDF5Format(SINGLE_HDF5_CELL_ANALYSIS_TEST_DATA_PATH)
     inst = CellAnalysisHDF5FormatTranslator
 

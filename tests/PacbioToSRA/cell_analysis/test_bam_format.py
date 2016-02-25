@@ -4,15 +4,6 @@ from tests.PacbioToSRA.cell_analysis.base_format_tests import BaseFormatTests
 
 
 class TestBamFormat(BaseFormatTests):
-    """To run these tests:
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.TestHDF5Format
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.TestHDF5Format.test_instrument_model.test_instrument_model
-
-    To run all test:
-    $ python -m unittest discover -v
-    """
-
 
     data_dir_for_tests = SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH
     inst = BamFormat(data_dir_for_tests)
