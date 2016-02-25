@@ -13,13 +13,7 @@ class AbstractCellAnalysisTranslator:
     @property
     @abstractproperty
     def cell_analysis_format_class(self):
-        """Returns the cell analysis format class that this translator class will be used for.
-
-        :param  cell_analysis:  Cell analysis such as cell_analysis.bam_format
-        :rtype  cell_analysis:  Child of cell_analysis.abstract_format.AbstractFormat
-        :return:                Cell analysis format class (ex: BamFormat)
-        :rtype                  class
-        """
+        """Returns the cell analysis format class that this translator class will be used for."""
         raise Exception("Missing implementation of abstract property.")
 
     @staticmethod
