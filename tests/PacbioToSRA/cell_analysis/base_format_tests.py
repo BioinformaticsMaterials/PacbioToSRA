@@ -116,9 +116,8 @@ class BaseFormatTests(unittest.TestCase):
             )
 
     def test_generate_file_info_map_check_md5sum(self):
-        analysis = self.inst
-        file_info_map = analysis.file_info_map
-        files = analysis.files
+        file_info_map = self.inst.file_info_map
+        files = self.inst.files
 
         self.assertEqual(len(files), len(file_info_map))
 
@@ -168,12 +167,10 @@ class BaseFormatTests(unittest.TestCase):
             },
         ]
 
-        analysis = self.inst
-
         for test in test_cases:
             self.assertEqual(
                 test['expected_result'],
-                analysis.required_files_exist(test['input']['files'], test['input']['extensions'])
+                self.inst.required_files_exist(test['input']['files'], test['input']['extensions'])
             )
 
 
