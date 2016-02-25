@@ -1,22 +1,8 @@
-import unittest
-
 from PacbioToSRA.hash_utils import md5
 from tests import *
 
 
-# https://gist.github.com/jonashaag/834a5f6051094dbed3bc
-#   Fixes issue of running the tests in the base class. Ugh!
-def test_base(base_cls):
-    class BaseClassSkipper(base_cls):
-        @classmethod
-        def setUpClass(cls):
-            if cls is BaseClassSkipper:
-                raise unittest.SkipTest("Base class")
-            super(BaseClassSkipper, cls).setUpClass()
-    return BaseClassSkipper
-
-
-@test_base
+@skip_base_class
 class BaseFormatTests(unittest.TestCase):
     """This class is used so the format classes can reuse the same tests."""
 
