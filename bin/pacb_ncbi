@@ -8,6 +8,7 @@ sys.path.insert(1, APP_ROOT_FULLPATH)
 import concurrent
 import click
 import logging
+import operator
 import os
 
 from datetime import datetime
@@ -189,7 +190,7 @@ def __extract_dirs_from_fofn(input_fofn_file):
     if not dirs:
         raise Exception('No directories found in input.fofn file.')
 
-    return dirs
+    return sorted(dirs)
 
 
 def __generate_cell_analyses(dirs):
@@ -219,9 +220,14 @@ def __generate_rows_for_files_worksheet(cell_analyses, num_threads=0):
     logger.info('Generating row data for files worksheet...')
 
     if num_threads > 1:
-        return __do_generate_rows_for_files_worksheet_async(cell_analyses, num_threads)
+        rows = __do_generate_rows_for_files_worksheet_async(cell_analyses, num_threads)
     else:
-        return __do_generate_rows_for_files_worksheet(cell_analyses)
+        rows = __do_generate_rows_for_files_worksheet(cell_analyses)
+
+    return sorted(
+        rows,
+        key=operator.itemgetter(1, 2)   # sort by run_id then by filename
+    )
 
 
 def __do_generate_rows_for_files_worksheet(cell_analyses):
