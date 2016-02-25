@@ -1,5 +1,4 @@
 import os
-import unittest
 
 from PacbioToSRA.cell_analysis.abstract_format import AbstractFormat, InvalidDirectoryException
 from tests import *

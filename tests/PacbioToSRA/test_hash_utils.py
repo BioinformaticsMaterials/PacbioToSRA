@@ -1,5 +1,3 @@
-import unittest
-
 from PacbioToSRA.hash_utils import *
 from tests import *
 

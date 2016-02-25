@@ -1,5 +1,3 @@
-import unittest
-
 from PacbioToSRA.ncbi.excel_sheet_from_template import *
 from tests import *
 

@@ -1,5 +1,3 @@
-import unittest
-
 from PacbioToSRA.cell_analysis.hdf5_format import HDF5Format
 from tests import *
 from tests.PacbioToSRA.cell_analysis.base_format_tests import BaseFormatTests

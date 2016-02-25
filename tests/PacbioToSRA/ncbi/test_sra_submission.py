@@ -1,5 +1,3 @@
-import unittest
-
 from PacbioToSRA.ncbi.sra_submission import *
 from tests import *
 

@@ -1,6 +1,3 @@
-import os
-import unittest
-
 from PacbioToSRA.ncbi.abstract_cell_analysis_translator import AbstractCellAnalysisTranslator
 from tests import *
 

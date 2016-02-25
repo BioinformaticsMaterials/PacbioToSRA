@@ -1,5 +1,3 @@
-import unittest
-
 from PacbioToSRA.cell_analysis.bam_format import BamFormat
 from tests import *
 from tests.PacbioToSRA.cell_analysis.base_format_tests import BaseFormatTests
