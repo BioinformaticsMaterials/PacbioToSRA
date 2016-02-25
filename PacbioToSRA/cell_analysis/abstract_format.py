@@ -144,24 +144,39 @@ class AbstractFormat:
     @property
     def analysis_metadata_file(self):
         """Metadata file that provides info on the cell analysis."""
-        if self.__analysis_metadata_file:
-            return self.__analysis_metadata_file
+        if not self.__analysis_metadata_file:
+            self.__analysis_metadata_file = self._find_analysis_metadata_file(
+                self.files, self.analysis_metadata_file_extension
+            )
 
+        return self.__analysis_metadata_file
+
+    @classmethod
+    def _find_analysis_metadata_file(cls, files, extension):
+        """From the list of files, finds the file for the metadata.
+
+        :param  files:      Files
+        :type   files:      set
+        :param  extension:  Extension
+        :param  extension:  string
+        :return:            Metadata file.
+        :rtype              string
+        """
         found = []
-        for f in self.files:
-            if self.analysis_metadata_file_extension == self.extract_file_extension(f):
+        for f in files:
+            if extension == cls.extract_file_extension(f):
                 found.append(f)
 
+        # expect that only 1 file is found
         if len(found) > 1:
-            # found more than one file which isn't expect
-            raise Exception('Found more than one file matching "{}". Files: {}'.format(
-                self.analysis_metadata_file_extension, found
-            ))
+            # found more than one file
+            raise Exception('Found more than one file matching "{}". Files: {}'.format(extension, found))
         elif len(found) < 1:
-            # found no file which isn't expect
-            raise Exception('Found no files matching "{}"'.format(self.analysis_metadata_file_extension))
+            # found no files
+            raise Exception('Found no files matching "{}"'.format(analysis_metadata_file_extension))
 
         return found[0]
+
 
     ######################
     # Methods
@@ -249,39 +264,30 @@ class AbstractFormat:
         except:
             raise Exception("No path to {}".format(path))
 
+    def is_dir_valid(self):
+        """Checks whether the directory is valid such as containing all the required files. This function exists so
+        this can be overwritten to add more checks.
+        """
+        return self.required_files_exist(self.files, self.required_file_extensions)
+
     @classmethod
-    def _required_files_exist(cls, files, extensions):
+    def required_files_exist(cls, files, extensions):
         """Checks that the file list contains each file extension.
 
         :param  files:      Files
         :type   files:      set
-        :param  extensions: Extensions (ex: .bam, .metadata.xml)
+        :param  extensions: Extensions (ex: bam, metadata.xml)
         :type   extensions: set
         :return:            Result of whether a file exists for each extension.
         :rtype              boolean
         """
-        for ext in extensions:
-            match = False
+        logger.debug("Checking that all required files exist.")
+        extensions_exist = dict.fromkeys(extensions, False)
 
-            for f in files:
-                if f.endswith(ext):
-                    match = True
-                    break
+        for f in files:
+            ext = cls.extract_file_extension(f)
 
-            if not match:
-                return False
-
-        return True
-
-    def is_dir_valid(self):
-        logger.debug("Checking directory is valid: {}".format(self.root_dir))
-
-        extensions_exist = dict.fromkeys(self.required_file_extensions, False)
-
-        for f in self.files:
-            ext = self.extract_file_extension(f)
-
-            if ext not in self.required_file_extensions:
+            if ext not in extensions:
                 continue
 
             extensions_exist[ext] = True
@@ -298,7 +304,10 @@ class AbstractFormat:
         :return:    File extension
         :rtype      string
         """
-        return f.split('.', 1)[1]
+        try:
+            return f.split('.', 1)[1]
+        except:
+            raise
 
 
 class InvalidDirectoryException(Exception):
