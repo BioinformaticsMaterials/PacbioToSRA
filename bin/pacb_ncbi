@@ -269,7 +269,9 @@ def __do_generate_rows_for_files_worksheet_async(cell_analyses, max_threads=0):
         for analysis in cell_analyses:
             i += 1
             logger.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
-            futures[executor.submit(analysis.get_info_for_files)] = analysis
+            # futures[executor.submit(analysis.file_info_map)] = analysis
+            f = lambda x: x.file_info_map
+            futures[executor.submit(f, analysis)] = analysis
 
     total_cell_analyses = len(cell_analyses)
     analysis_count = 0
@@ -394,7 +396,7 @@ def __do_upload(input_fofn_file, username, ssh_key_file):
     # Get all files to upload
     files_only = []
     for analysis in cell_analyses:
-        files_only.extend(analysis.get_files())
+        files_only.extend(analysis.files)
 
     logger.info("Submitting files to NCBI...")
 
