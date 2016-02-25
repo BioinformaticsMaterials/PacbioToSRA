@@ -161,20 +161,29 @@ def __extract_dirs_from_fofn(input_fofn_file):
     :return:                    Root directories of the cell analysis results.
     :rtype                      set
     """
-    logger.info("Extracting base directory from: {} ....".format(input_fofn_file))
+    logger.info("Extracting base directories from file: {} ....".format(input_fofn_file))
     dirs = set()
     with open(input_fofn_file, 'r') as fp:
         for f in fp:
-            # ex: /mnt/data3/vol60/2420308/0001/Analysis_Results/m150325_061829_42142_c100811842550000001823178610081510_s1_p0.1.subreads.fasta
-            # want everything before "Analysis_Results"
-            d = dirname(dirname(f.strip()))
+            logger.debug("Extracting directory from: {}".format(f.strip("\n")))
 
-            if d == '':
+            f = f.strip()
+
+            if f == '':
+                logger.debug('Blank line. Ignoring!')
                 continue
 
-            if not os.path.exists(d):
-                raise Exception("Reading input_fofn_file. Directory does not exist: {}".format(d))
+            d = f if os.path.isdir(f) else dirname(f)
 
+            # if hdf5 directory, need parent dir of which contains Analysis_Results subdirectory and metatdata.xml file
+            # TODO: What happens if bam files are in a directory named "Analysis_Results"?
+            if d.endswith('Analysis_Results'):
+                d = dirname(d)
+
+            if not os.path.exists(d):
+                raise Exception("Directory does not exist: {}".format(d))
+
+            logger.debug("Extracted: {}".format(d))
             dirs.add(d)
 
     if not dirs:
