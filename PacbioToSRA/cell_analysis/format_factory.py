@@ -26,14 +26,3 @@ class FormatFactory(object):
 
         raise Exception("Cell Analysis Format object could not be created.")
 
-
-if __name__ == '__main__':
-    dirs = set([
-        '/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/temp/bam2/r54016_20160209_005307/1_A01',
-        '/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/temp/2015-04-16_42141_1139__Hummingbird_17kb_plate_7/H01_1',
-    ])
-
-    for d in dirs:
-        print d
-        o = FormatFactory.newCellAnalysis(d)
-        print o.instrument_model

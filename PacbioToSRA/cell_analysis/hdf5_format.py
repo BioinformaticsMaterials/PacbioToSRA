@@ -28,22 +28,3 @@ class HDF5Format(AbstractFormat):
     def analysis_metadata_file_extension(self):
         return 'metadata.xml'
 
-
-if __name__ == '__main__':
-    ca_with_hdf5 = HDF5Format('/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/temp/2015-04-16_42141_1139__Hummingbird_17kb_plate_7/H01_1')
-    print 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'
-    print ca_with_hdf5.root_dir
-    print 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT'
-    print ca_with_hdf5.software_platform
-    print 'YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY'
-    print ca_with_hdf5.instrument_model
-    print 'EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE'
-    print ca_with_hdf5.files
-    print '5555555555555555555555555555555555555555'
-    print ca_with_hdf5.analysis_metadata_file
-    print 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
-    from pprint import pprint
-    # pprint(ca_with_hdf5.file_info_map)
-    print '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
-    print ca_with_hdf5.get_value_from_analysis_metadata_file('Run/Name')
-

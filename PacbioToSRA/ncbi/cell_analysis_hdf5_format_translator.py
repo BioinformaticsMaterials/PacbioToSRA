@@ -30,17 +30,3 @@ class CellAnalysisHDF5FormatTranslator(AbstractCellAnalysisTranslator):
             .get_value_from_analysis_metadata_file('Primary/ConfigFileName')\
             .rstrip('.xml')
 
-
-if __name__ == '__main__':
-    from PacbioToSRA.cell_analysis.hdf5_format import HDF5Format
-
-    ca_in_hdf5 = HDF5Format('/Users/clongboy/projects/PacbioToSRA/src/PacbioToSRA/temp/2015-04-16_42141_1139__Hummingbird_17kb_plate_7/H01_1')
-    hdf5cat = CellAnalysisHDF5FormatTranslator()
-    print hdf5cat.translate_sample_name(ca_in_hdf5)
-    print hdf5cat.translate_library_id(ca_in_hdf5)
-    print hdf5cat.translate_platform(ca_in_hdf5)
-    print hdf5cat.translate_instrument_model(ca_in_hdf5)
-    print hdf5cat.translate_design_description(ca_in_hdf5)
-    print hdf5cat.translate_file_type(ca_in_hdf5)
-    print hdf5cat.translate_run_id(ca_in_hdf5)
-
