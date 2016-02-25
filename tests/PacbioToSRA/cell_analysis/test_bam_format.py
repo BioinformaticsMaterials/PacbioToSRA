@@ -2,55 +2,49 @@ import unittest
 
 from PacbioToSRA.cell_analysis.bam_format import BamFormat
 from tests import *
+from tests.PacbioToSRA.cell_analysis.base_format_tests import BaseFormatTests
 
 
-class TestBamFormat(unittest.TestCase):
+class TestBamFormat(BaseFormatTests):
     """To run these tests:
     $ python -m unittest -v tests.PacbioToSRA.cell_analysis
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.TestBamFormat
-    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.TestBamFormat.test_instrument_model.test_instrument_model
+    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.TestHDF5Format
+    $ python -m unittest -v tests.PacbioToSRA.cell_analysis.TestHDF5Format.test_instrument_model.test_instrument_model
 
     To run all test:
     $ python -m unittest discover -v
     """
 
-    def test_instrument_model(self):
-        self.assertIsNotNone(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).instrument_model)
 
-    def test_required_file_extensions(self):
-        self.assertIsNotNone(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).required_file_extensions)
+    data_dir_for_tests = SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH
+    inst = BamFormat(data_dir_for_tests)
+    num_valid_files = 2
 
-    def test_file_type(self):
-        self.assertIsNotNone(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).file_type)
+    def test_get_value_from_analysis_metadata_file(self):
+        test_cases = [
+            {
+                'input': {
+                    'path': 'pbmeta:CollectionMetadata/pbmeta:WellSample',
+                    'attribute': 'Name',
+                },
+                'expected_result': 'CollectionMetadata_WellSample_Name_11111',
+            },
+            {
+                'input': {
+                    'path': 'pbmeta:CollectionMetadata/pbmeta:Primary/pbmeta:ConfigFileName',
+                    'attribute': None,
+                },
+                'expected_result': 'CollectionMetadata_Primary_ConfigFileName_11111.xml',
+            },
+        ]
 
-    def test_analysis_metadata_file_extension(self):
-        self.assertIsNotNone(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).analysis_metadata_file_extension)
+        analysis = self.inst
 
-    def test_root_dir(self):
-        self.assertEqual(
-            SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH,
-            BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).root_dir
-        )
-
-    def test_software_platform(self):
-        self.assertIsNotNone(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).software_platform)
-
-    def test_files(self):
-        # not perfect but enough
-        self.assertEqual(
-            2,     # number of files
-            len(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).files)
-        )
-
-    def test_file_info_map(self):
-        # not perfect but enough
-        self.assertEqual(
-            2,     # number of files
-            len(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).file_info_map)
-        )
-
-    def test_software_platform(self):
-        self.assertIsNotNone(BamFormat(SINGLE_BAM_CELL_ANALYSIS_TEST_DATA_PATH).analysis_metadata_file)
+        for test in test_cases:
+            self.assertEqual(
+                test['expected_result'],
+                analysis.get_value_from_analysis_metadata_file(test['input']['path'], test['input']['attribute'])
+            )
 
 
 if __name__ == '__main__':
