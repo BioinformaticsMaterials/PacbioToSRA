@@ -33,31 +33,71 @@ class TestAbstractFormat(unittest.TestCase):
         with self.assertRaises(InvalidDirectoryException):
             ChildOfAbstractFormat(os.path.dirname(os.path.realpath(__file__)))
 
-    def test_extract_file_extension(self):
+    def test_file_has_extension(self):
         test_cases = [
             {
-                'input': 'test.csv',
-                'expected_result': 'csv',
+                'input': {
+                    'file': 'file.txt',
+                    'extension': 'txt',
+                },
+                'expected_result': True,
             },
             {
-                'input': 'this.has.multiple.periods.txt',
-                'expected_result': 'has.multiple.periods.txt',
+                'input': {
+                    'file': '/path/to/file/input.fofn',
+                    'extension': 'fofn',
+                },
+                'expected_result': True,
             },
             {
-                'input': '/full/path/to/file.doc',
-                'expected_result': 'doc',
+                'input': {
+                    'file': '/path/with.a.period/file.log',
+                    'extension': 'log',
+                },
+                'expected_result': True,
+            },
+            {
+                'input': {
+                    'file': 'file.with.many..periods.csv',
+                    'extension': 'csv',
+                },
+                'expected_result': True,
+            },
+            {
+                'input': {
+                    'file': 'sample.run.metadata.xml',
+                    'extension': 'metadata.xml',
+                },
+                'expected_result': True,
+            },
+            {
+                'input': {
+                    'file': 'file.txt',
+                    'extension': 'csv',
+                },
+                'expected_result': False,
+            },
+            {
+                'input': {
+                    'file': '/csv/csv/csv/file.log',
+                    'extension': 'csv',
+                },
+                'expected_result': False,
+            },
+            {
+                'input': {
+                    'file': 'csv.csv.csv.txt',
+                    'extension': 'csv',
+                },
+                'expected_result': False,
             },
         ]
 
         for t in test_cases:
             self.assertEqual(
                 t['expected_result'],
-                AbstractFormat.extract_file_extension(t['input'])
+                AbstractFormat.file_has_extension(t['input']['file'], t['input']['extension'])
             )
-
-    def test_extract_file_extension_with_no_extension(self):
-        with self.assertRaises(Exception):
-            AbstractFormat.extract_file_extension('this_has_no_extension')
 
 
 if __name__ == '__main__':

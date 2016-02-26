@@ -120,10 +120,9 @@ class AbstractFormat:
 
         for root, _, filenames in os.walk(self.root_dir):
             for f in filenames:
-                ext = self.extract_file_extension(f)
-
-                if ext in self.required_file_extensions:
-                    self.__files.add(os.path.join(root, f))
+                for ext in self.required_file_extensions:
+                    if self.file_has_extension(f, ext):
+                        self.__files.add(os.path.join(root, f))
 
         return self.__files
 
@@ -163,7 +162,7 @@ class AbstractFormat:
         """
         found = []
         for f in files:
-            if extension == cls.extract_file_extension(f):
+            if cls.file_has_extension(f, extension):
                 found.append(f)
 
         # expect that only 1 file is found
@@ -284,29 +283,17 @@ class AbstractFormat:
         extensions_exist = dict.fromkeys(extensions, False)
 
         for f in files:
-            ext = cls.extract_file_extension(f)
-
-            if ext not in extensions:
-                continue
-
-            extensions_exist[ext] = True
+            for ext in extensions:
+                if cls.file_has_extension(f, ext):
+                    extensions_exist[ext] = True
 
         logger.debug("Check directory results: {}".format(extensions_exist))
         return all(extensions_exist.itervalues())
 
-    @staticmethod
-    def extract_file_extension(f):
-        """ Extracts everything after the first "." (ex: input.metatdata.xml => metadata.xml)
-
-        :param  f:  File name
-        :type   f:  string
-        :return:    File extension
-        :rtype      string
-        """
-        try:
-            return f.split('.', 1)[1]
-        except:
-            raise
+    @classmethod
+    def file_has_extension(cls, f, extension):
+        """Checks whether the f has the extension. Must """
+        return f.endswith(extension)
 
 
 class InvalidDirectoryException(Exception):
