@@ -35,6 +35,24 @@
 __author__ = 'jlandolin'
 __email__ = 'jlandolin@pacificbiosciences.com'
 
+
+# This script is deprecated. The new script is bin_send_to_ncbi.py
+values_to_continue = set(['y', 'yes'])
+values_to_stop = set(['n', 'no'])
+all_values = values_to_continue.union(values_to_stop)
+
+print "This script will be DEPRECATED. Please use the following script instead: bin/send_to_ncbi.py"
+response = None
+
+while response not in all_values:
+    response = str(raw_input("Would you still like to continue? (Y)es/(No): ")).lower()
+    if response in values_to_continue:
+        break
+    elif response in values_to_stop:
+        import sys
+        sys.exit()
+
+
 import os
 import csv
 import argparse

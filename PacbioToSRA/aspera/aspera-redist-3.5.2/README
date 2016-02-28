@@ -1,0 +1,42 @@
+Aspera Redistributable Package
+==============================
+
+This package contains the essential files required to perform a FASP transfer.
+These files together with the Aspera Fasp Manager library can be configured as
+an embedded Aspera Server or an embedded Aspera client. The table below lists 
+the contents of this redistributable pacakge. The Server and Client columns
+indicate whether that component needs to be installed at the server and client 
+or not, respectively. 
+
+FileName             Description                              Server     Client
+================================================================================
+ascp                 Core Aspera transfer binary               Yes        Yes 
+
+ascmd                Aspera Command Server                     Yes        No 
+
+aspera.conf          Aspera configuration file                 Yes        Yes 
+
+fasplicense.txt      Aspera license file                       Yes        Yes
+
+aspshell             Aspera Shell                              Yes        No
+
+aspshell-r           Aspera Restricted Shell                   Yes        No
+================================================================================
+
+Notes:
+1. This package contains the binaries for several platforms. You can ignore
+   the ones you do not need.
+2. The included license is a web-client license and requires Aspera Connect 
+   Server to perform transfers. Contact Aspera for other licenses.
+3. Aspera's executables depend on some libraries to run. These libraries are 
+   placed next the exectuables in this package and must always be deployed 
+   along with the executables.
+
+Release Versions 
+================
+ascp: fasp/branches/3.5.2 
+ascmd: server/branches/3.5.2 
+aspshell: server/branches/3.5.2 
+
+Release Date: 2015-01-09 
+

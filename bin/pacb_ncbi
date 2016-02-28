@@ -1,0 +1,494 @@
+#!/usr/bin/env python
+
+import sys
+from os.path import realpath, dirname
+APP_ROOT_FULLPATH = dirname(dirname(realpath(__file__)))
+sys.path.insert(1, APP_ROOT_FULLPATH)
+
+import concurrent
+import click
+import logging
+import operator
+import os
+
+from datetime import datetime
+from PacbioToSRA.cell_analysis.format_factory import FormatFactory
+from PacbioToSRA.ncbi.cell_analysis_translator_factory import CellAnalysisTranslatorFactory
+from PacbioToSRA.ncbi.excel_sheet_from_template import ExcelSheetFromTemplate
+from PacbioToSRA.ncbi.sra_submission import SraSubmission
+from retrying import retry
+
+
+# TODO: This should eventually go into a config file
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] [%(levelname)s] [%(processName)s] [%(threadName)s] %(message)s',
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
+
+
+# Wait 2^x * 1000 milliseconds between each retry, up to 10 seconds, then 10 seconds afterwards
+NCBI_RETRY_WAIT_EXPONENTIAL_MULTIPLIER = 1000
+NCBI_RETRY_WAIT_EXPONENTIAL_MAX = 10000
+# Stopping after 30 mins (1000*60*30)
+NCBI_RETRY_STOP_MAX_DELAY = 1000*60*30
+
+EXCEL_OUTPUT_FILE_FORMAT = 'sra_submission_{}.xlsx'
+MIN_THREADS = 2
+MAX_THREADS = 100
+HELP_MSG_FOR_INPUT_FOFN = 'The input.fofn file. This file contains the dataset directories.'
+HELP_MSG_FOR_BIOPROJECT_ID = 'NCBI BioProject ID created on the NCBI website.'
+HELP_MSG_FOR_BIOSAMPLE_ID = 'NCBI BioSample ID created on the NCBI website.'
+HELP_MSG_FOR_OUTPUT_EXCEL_FILE = "Name of the output file. Output format is .xslx. Default file name: {}".format(
+                                 EXCEL_OUTPUT_FILE_FORMAT.format('<date>'))
+HELP_MSG_FOR_MULTIPROCESS = 'Enable multiprocess. Will create excel document and upload files in parallel. ' \
+                            'This will speed up the entire process but will require more system resources.'
+HELP_MSG_FOR_THREADS = "Number of threads to use. This decreases total process time but requires more " \
+                       "system resources. Range must be between {} and {}".format(MIN_THREADS, MAX_THREADS)
+HELP_MSG_FOR_USERNAME = 'Username to use to upload data sets to NCBI.'
+HELP_MSG_FOR_SSH_KEY = 'SSH key to use to upload data sets to NCBI.'
+
+
+############################################
+# Click functions (for script parameters)
+############################################
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command(help='Creates the Excel file that contains the dataset info required by NCBI.')
+@click.option('-i', '--input_fofn_file', 'input_fofn_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
+@click.option('-p', '--bioproject_id', 'bioproject_id',
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOPROJECT_ID)
+@click.option('-s', '--biosample_id', 'biosample_id',
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOSAMPLE_ID)
+@click.option('-x', '--excel_output_file', 'excel_output_file',
+              required=False, type=click.Path(file_okay=True, resolve_path=True), help=HELP_MSG_FOR_OUTPUT_EXCEL_FILE)
+@click.option('-t', '--num_threads', 'num_threads',
+              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS), help=HELP_MSG_FOR_THREADS)
+def create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads):
+    __func_error_wrapper(
+        __do_create_excel_file,
+        input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads
+    )
+
+
+@cli.command(help='Uploads the datasets in the input.fofn file to NCBI.')
+@click.option('-i', '--input_fofn_file', 'input_fofn_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
+@click.option('-u', '--username', 'username',
+              required=True, type=click.STRING, help=HELP_MSG_FOR_USERNAME)
+@click.option('-k', '--ssh_key_file', 'ssh_key_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_SSH_KEY)
+def upload(input_fofn_file, username, ssh_key_file):
+    __func_error_wrapper(
+        __do_upload,
+        input_fofn_file, username, ssh_key_file
+    )
+
+
+@cli.command(help='Creates the Excel file that contains the dataset info required by NCBI and uplaods them to NCBI.')
+@click.option('-i', '--input_fofn_file', 'input_fofn_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
+@click.option('-p', '--bioproject_id', 'bioproject_id',
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOPROJECT_ID)
+@click.option('-s', '--biosample_id', 'biosample_id',
+              required=True, type=click.STRING, help=HELP_MSG_FOR_BIOSAMPLE_ID)
+@click.option('-x', '--excel_output_file', 'excel_output_file',
+              required=False, type=click.Path(file_okay=True, resolve_path=True), help=HELP_MSG_FOR_OUTPUT_EXCEL_FILE)
+@click.option('-u', '--username', 'username',
+              required=True, type=click.STRING, help=HELP_MSG_FOR_USERNAME)
+@click.option('-k', '--ssh_key_file', 'ssh_key_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_SSH_KEY)
+@click.option('-m', '--enable_multiprocess', 'enable_multiprocess',
+              is_flag=True, help=HELP_MSG_FOR_MULTIPROCESS)
+@click.option('-t', '--num_threads', 'num_threads',
+              required=False, type=click.IntRange(MIN_THREADS, MAX_THREADS), help=HELP_MSG_FOR_THREADS)
+def create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, excel_output_file,
+                                 username, ssh_key_file, enable_multiprocess, num_threads):
+    __func_error_wrapper(
+        __do_create_excel_file_and_upload,
+        input_fofn_file, bioproject_id, biosample_id, excel_output_file, username, ssh_key_file,
+        enable_multiprocess, num_threads
+    )
+
+
+@cli.command(help='Calculates the total size of the data that will be uploaded.')
+@click.option('-i', '--input_fofn_file', 'input_fofn_file',
+              required=True, type=click.Path(exists=True, readable=True, resolve_path=True), help=HELP_MSG_FOR_INPUT_FOFN)
+def calc_upload_size(input_fofn_file):
+    __func_error_wrapper(
+        __do_calc_upload_size,
+        input_fofn_file
+    )
+
+
+###########################################
+# Functions to create the excel file
+###########################################
+
+def __do_create_excel_file(input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads):
+    if not excel_output_file:
+        excel_output_file = __generate_excel_file_name()
+
+    # os.path.exists checks if file and dir already exist
+    if os.path.exists(excel_output_file):
+        raise Exception("File/Directory already exist: {}".format(excel_output_file))
+
+    cell_analyses = __generate_cell_analyses_from_fofn(input_fofn_file)
+
+    sr_data_ws_rows = __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analyses)
+    files_ws_rows = __generate_rows_for_files_worksheet(cell_analyses, num_threads)
+
+    __create_excel_workbook(excel_output_file, files_ws_rows, sr_data_ws_rows)
+
+    logger.info('Excel document created.')
+
+
+def __generate_cell_analyses_from_fofn(input_fofn_file):
+    dirs = __extract_dirs_from_fofn(input_fofn_file)
+    return __generate_cell_analyses(dirs)
+
+
+def __extract_dirs_from_fofn(input_fofn_file):
+    """Extracts all the root directories from the input.fofn file.
+
+    :param  input_fofn_file:    The file that contains the cell analysis result files.
+    :type   input_fofn_file:    string
+    :return:                    Root directories of the cell analysis results.
+    :rtype                      set
+    """
+    logger.info("Extracting base directories from file: {} ....".format(input_fofn_file))
+    dirs = set()
+    with open(input_fofn_file, 'r') as fp:
+        for f in fp:
+            logger.debug("Extracting directory from: {}".format(f.strip("\n")))
+
+            f = f.strip()
+
+            if f == '':
+                logger.debug('Blank line. Ignoring!')
+                continue
+
+            d = f if os.path.isdir(f) else dirname(f)
+
+            # if hdf5 directory, need parent dir of which contains Analysis_Results subdirectory and metatdata.xml file
+            # TODO: What happens if bam files are in a directory named "Analysis_Results"?
+            if d.endswith('Analysis_Results'):
+                d = dirname(d)
+
+            if not os.path.exists(d):
+                raise Exception("Directory does not exist: {}".format(d))
+
+            logger.debug("Extracted: {}".format(d))
+            dirs.add(d)
+
+    if not dirs:
+        raise Exception('No directories found in input.fofn file.')
+
+    return sorted(dirs)
+
+
+def __generate_cell_analyses(dirs):
+    """Get cell analys result information from all the directories
+
+    :param  dirs:   Directories
+    :type   dirs:   list
+    :return:        Objects that hold information for all the cell result directories
+    :rtype          list
+    """
+    analyses = []
+    for d in dirs:
+        logger.info("Retrieving cell analysis data from: {}".format(d))
+        analyses.append(FormatFactory.newCellAnalysis(d))
+
+    return analyses
+
+
+def __generate_rows_for_files_worksheet(cell_analyses, num_threads=0):
+    """Generates all the rows for the worksheet that contains information on all the files.
+
+    :param  cell_analyses:  List of all cell analysis result info
+    :type   cell_analyses:  list
+    :return:                List of rows to insert into an excel worksheet
+    :rtype                  list
+    """
+    logger.info('Generating row data for files worksheet...')
+
+    if num_threads > 1:
+        rows = __do_generate_rows_for_files_worksheet_async(cell_analyses, num_threads)
+    else:
+        rows = __do_generate_rows_for_files_worksheet(cell_analyses)
+
+    return sorted(
+        rows,
+        key=operator.itemgetter(1, 2)   # sort by run_id then by filename
+    )
+
+
+def __do_generate_rows_for_files_worksheet(cell_analyses):
+    """Generates all the rows for the worksheet that contains information on all the files.
+
+    :param  cell_analyses:  List of all cell analysis result info
+    :type   cell_analyses:  list
+    :return:                List of rows to insert into an excel worksheet
+    :rtype                  list
+    """
+    total_cell_analyses = len(cell_analyses)
+    analysis_count = 0
+    rows = []
+
+    for analysis in cell_analyses:
+        analysis_count += 1
+        files_info = analysis.file_info_map
+
+        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analyses))
+
+    return rows
+
+
+def __do_generate_rows_for_files_worksheet_async(cell_analyses, max_threads=0):
+    """Generates all the rows for the worksheet that contains information on all the files.
+
+    :param  cell_analyses:  List of all cell analysis result info
+    :type   cell_analyses:  list
+    :return:                List of rows to insert into an excel worksheet
+    :rtype                  list
+    """
+    # "file_info_map" is a property but it takes a while since it generates all the files md5sums.
+    #   In order to use this property asynchronously, need to wrap it in a function.
+    async_wrapper = lambda x: x.file_info_map
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+        logger.debug("Submitting job to get file info to Thread Pool...")
+
+        futures = {}
+        job_total = len(cell_analyses)
+        i = 0
+
+        for analysis in cell_analyses:
+            i += 1
+            logger.debug("    ({}/{}) Submitting {}".format(i, job_total, analysis.root_dir))
+            futures[executor.submit(async_wrapper, analysis)] = analysis
+
+    total_cell_analyses = len(cell_analyses)
+    analysis_count = 0
+    rows = []
+
+    for future in concurrent.futures.as_completed(futures):
+        analysis_count += 1
+        analysis = futures[future]
+        files_info = future.result()
+
+        rows.extend(__generate_rows(analysis, files_info, analysis_count, total_cell_analyses))
+
+    return rows
+
+
+def __generate_rows(analysis, files_info, file_count, total_file_count):
+    """
+    Header format:
+    Library_ID | Run_ID | Filename | md5sum
+    """
+    logger.info("    ({}/{}) Generating specific information for all files ({}) in: {}".format(
+        file_count, total_file_count, len(files_info), analysis.root_dir
+    ))
+
+    trans = CellAnalysisTranslatorFactory().newCellAnalysisTranslator(analysis)
+
+    library_id = trans.translate_library_id(analysis)
+    run_id = trans.translate_run_id(analysis)
+
+    rows = []
+    for f, info in files_info.iteritems():
+        rows.append([library_id, run_id, info['filename'], info['md5sum']])
+
+    return rows
+
+
+def __generate_run_id_from_filename(filename):
+    f = os.path.basename(filename)
+    parts = f.split('.')
+    return parts[0]
+
+
+def __generate_rows_for_sr_data_worksheet(bioproject_id, biosample_id, cell_analyses):
+    """Generates all the rows for the worksheet that contains sr data.
+
+
+    :param  bioproject_id:  BioProject ID
+    :rtype  bioporject_id:  string
+    :param  biosample_id:   BioSample ID
+    :rtype  biosample_id:   string
+    :param  cell_analyses:  All cell analysis result info
+    :type   cell_analyses:  list
+    :return:                Rows to insert into an excel worksheet
+    :rtype                  list
+    """
+    logger.info('Generating row data for sr data worksheet...')
+    rows = []
+    unique_sample_names = set()
+    for r in cell_analyses:
+        trans = CellAnalysisTranslatorFactory().newCellAnalysisTranslator(r)
+        sample_name = trans.translate_sample_name(r)
+        if sample_name not in unique_sample_names:
+            rows.append([
+                bioproject_id,                          # bioproject_accession
+                biosample_id,                           # biosample_accession
+                sample_name,                            # sample_name
+                sample_name,                            # library_ID
+                None,                                   # title/short description
+                None,                                   # library_strategy (click for details)
+                None,                                   # library_source (click for details)
+                None,                                   # library_selection (click for details)
+                None,                                   # library_layout
+                trans.translate_platform(r),            # platform (click for details)
+                trans.translate_instrument_model(r),    # instrument_model
+                trans.translate_design_description(r),  # design_description
+                None,                                   # reference_genome_assembly (or accession)
+                None,                                   # alignment_software
+                None,                                   # forward_read_length
+                None,                                   # reverse_read_length
+                trans.translate_file_type(r),           # filetype
+                None,                                   # filename
+                None,                                   # MD5_checksum
+                None,                                   # filetype
+                None,                                   # filename
+                None,                                   # MD5_checksum
+            ])
+
+        unique_sample_names.add(sample_name)
+
+    return rows
+
+
+def __create_excel_workbook(output_filename, files_ws_rows, sr_data_ws_rows):
+    """Creates the Excel workbook
+
+    :param  output_filename:    Output file name
+    :type   output_filename:    string
+    :param  files_ws_rows:      Rows of file data
+    :type   files_ws_rows:      list
+    :param  sr_data_ws_rows:    Rows of SR Data
+    :type   sr_data_ws_rows:    list
+    """
+    logger.info("Creating {}...".format(output_filename))
+    wb = ExcelSheetFromTemplate(output_filename)
+    logger.info('    Writing to files worksheet...')
+    wb.write_to_files_worksheet(files_ws_rows)
+    logger.info('    Writing to sra data worksheet...')
+    wb.write_to_sr_data_worksheet(sr_data_ws_rows)
+
+
+###########################################
+# Functions to upload to NCBI
+###########################################
+
+def __do_upload(input_fofn_file, username, ssh_key_file):
+    # exit if ascp command does not exist
+    if not SraSubmission(username, ssh_key_file).ascp_cmd_exist():
+        raise Exception("Could not find Aspera's ascp command!")
+
+    cell_analyses = __generate_cell_analyses_from_fofn(input_fofn_file)
+
+    # Get all files to upload
+    files_only = []
+    for analysis in cell_analyses:
+        files_only.extend(analysis.files)
+
+    logger.info("Submitting files to NCBI...")
+
+    # Aspera has an issue when uploading lots of files. On a failure, whole upload process is stopped.
+    #   Workaround is to do one file at a time.
+    for f in files_only:
+        try:
+            __do_upload_per_file(f, username, ssh_key_file)
+        except:
+            logger.error('Upload failure!')
+            raise
+
+    logger.info('Upload complete.')
+
+
+@retry(wait_exponential_multiplier=NCBI_RETRY_WAIT_EXPONENTIAL_MULTIPLIER,
+       wait_exponential_max=NCBI_RETRY_WAIT_EXPONENTIAL_MAX,
+       stop_max_delay=NCBI_RETRY_STOP_MAX_DELAY)
+def __do_upload_per_file(f, username, ssh_key_file):
+    """Extracted to do retries
+    """
+    SraSubmission(username, ssh_key_file).submit_files([f])
+
+
+def __do_calc_upload_size(input_fofn_file):
+    cell_analyses = __generate_cell_analyses_from_fofn(input_fofn_file)
+
+    total_size = 0
+    total_files = 0
+    for analysis in cell_analyses:
+        for f in analysis.files:
+            size = os.path.getsize(f)
+            logger.info("{}: {}".format(f, size))
+            total_size += size
+            total_files += 1
+
+    logger.info("Total number of files: {}".format(total_files))
+    logger.info("Total size: {} ({} MB)".format(total_size, round(total_size/(1024*1024.0), 2)))
+
+
+###########################################
+# Functions for whole process
+###########################################
+
+def __do_create_excel_file_and_upload(input_fofn_file, bioproject_id, biosample_id, excel_output_file,
+                                      username, ssh_key_file, enable_multiprocess, num_threads):
+
+    excel_args = (input_fofn_file, bioproject_id, biosample_id, excel_output_file, num_threads)
+    upload_args = (input_fofn_file, username, ssh_key_file)
+
+    if enable_multiprocess:
+        # used multiple processes as workaround for multithread problem with Aspera. "ValueError: signal only works in main thread"
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            fs = [
+                executor.submit(__do_create_excel_file, *excel_args),
+                executor.submit(__do_upload, *upload_args),
+            ]
+
+        # just to bubble up the exceptions
+        for f in concurrent.futures.as_completed(fs):
+            f.result()
+
+    else:
+        __do_create_excel_file(*excel_args)
+        __do_upload(*upload_args)
+
+
+###########################################
+# Misc.
+###########################################
+
+def __generate_excel_file_name():
+    """ Create an Excel workbook output file name with the current date.
+
+    :return:    Name of Excel file
+    :rtype      string
+    """
+    return EXCEL_OUTPUT_FILE_FORMAT.format(datetime.now().strftime("%Y%m%d%H%M"))
+
+
+def __func_error_wrapper(func, *args):
+    try:
+        func(*args)
+        logger.info('Complete')
+    except Exception as e:
+        logger.error(e.message)
+        logger.error('An error was encountered!')
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    cli()
+

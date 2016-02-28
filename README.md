@@ -2,49 +2,65 @@
 This repo contains scripts, instructions, and examples on preparing PacBio sequence data for data submission to the SRA. 
 
 ## Instructions
-1. Run the script
-2. Register project and samples
-3. Manually create excel spreadsheet
-4. Upload using aspera
-5. Email NCBI
+1. Register project and samples
+2. Setup script's environment
+3. Run the script
+4. Update spreadsheet and email it to NCBI
 
 
-##Step 1. Run the script
-```
-$ python PacbioToSRA.py input.fofn
-```
-
-###Inputs: 
-  1. input.fofn
-
-###Outputs:
-  1. sra_data.txt - sample information for data submission (from metadata.xml)
-  2. file_info.csv - md5sums of of files for data submission
-  3. aspera.fofn - full path to all files that need to be uploaded to NCBI SRA
-
-
-##Step 2. Register project and samples
+##Step 1. Register project and samples
 
     Go to https://submit.ncbi.nlm.nih.gov/ and register your Bioproject
     Go to https://submit.ncbi.nlm.nih.gov/ and register your Biosample
 
-##Step 3. Manually create excel spreadsheet
-Open SRA_submission.xlsx and paste the contents of sra_data.txt to the "library_ID" column of the spreadsheet.  Fill in the BioProject and BioSamples that you created in step 2 for each entry. Open file_info.csv, and paste the contents as a new sheet in SRA_submission.xlsx
 
-##Step 4. Upload using aspera
-``` 
-$ screen
-$ for i in $(cat aspera.fofn); 
-  do aspera/connect/bin/ascp -i xxxx_sshkeyformyinstitution.openssh -QT -l200m -k1 $i asp-xxxx_myinstitution@upload.ncbi.nlm.nih.gov:incoming;
-  done;
+##Step 2. Prepare script's environment
+####Setup virtual environment:
+
+```
+(go to the root directory of this repo)
+$ virtualenv virtualenv_PacbioToSRA
+$ source virtualenv_PacbioToSRA/bin/activate
+$ pip install -r requirements.txt
 ```
 
-* do this in a screen session because it may take a long time
-* download the linux version of aspera-connect that contains the ascp command (http://downloads.asperasoft.com/en/downloads/50
-* xxxx_sshkeyformyinstitution is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
-* asp-xxxx_myinstitution is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
 
+##Step 3. Run the script
+####Usage:
+```
+$ bin/pacb_ncbi --help
+Usage: pacb_ncbi [OPTIONS] COMMAND [ARGS]...
 
-##Step 5. Email NCBI
-Email (info@ncbi.nlm.nih.gov) and attach the spreadsheet to the email. 
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  calc_upload_size              Calculates the total size of the data that...
+  create_excel_file             Creates the Excel file that contains the...
+  create_excel_file_and_upload  Creates the Excel file that contains the...
+  upload                        Uploads the datasets in the input.fofn file...
+```
+####Example:
+```
+$ bin/pacb_ncbi create_excel_file_and_upload -i /path/to/input.fofn -p bioproject1 -s biosample1 -x my_sra.xlsx -u ncbi_username -k /path/to/ssh/file
+```
+####Notes:
+*  NCBI_USERNAME is the username that ncbi assigns to your institution (get this from info@ncbi.nlm.nih.gov)
+*  SSH _KEY _FILE is the ssh key file that you generated for your institution (http://www.ncbi.nlm.nih.gov/books/NBK180157/)
+* To get additional help, type:  
+	```$ bin/pacb_ncbi <subcommand> --help```  
+	ex:  
+	```$ bin/pacb_ncbi create_excel_file_and_upload --help```  
+	```$ bin/pacb_ncbi create_excel_file --help```  
+	```$ bin/pacb_ncbi upload --help```  
+
+##Step 4. Update spreadsheet and email it to NCBI
+*  Update the spreadsheet with any additional information. The following columns must be filled in:
+    * "SRA_data" sheet
+        * title/short description
+        * library_strategy
+        * library_source
+        * library_selection
+        * library_layout
+*  Email (info@ncbi.nlm.nih.gov) and attach the spreadsheet to the email. 
 
